@@ -40,7 +40,6 @@ export function Stats({ logs, now }: { logs: BinLog[]; now: number }) {
       <div><span className="big-num">{s.total}</span><span className="lbl">bins down total</span></div>
       <div><span className="big-num">{s.perWeek.toFixed(1)}</span><span className="lbl">bins a week (should be like 4)</span></div>
       <div><span className="big-num">{s.drought}d</span><span className="lbl">longest bin drought</span></div>
-      <div><span className="big-num">{s.doubleRate}%</span><span className="lbl">of runs were double hauls ({s.together} done as a pair)</span></div>
     </section>
   );
 }
