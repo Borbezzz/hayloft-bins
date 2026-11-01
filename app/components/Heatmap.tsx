@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { colorOf, type BinLog } from "@/lib/people";
-import { DAY, dayKey, keyToUtc, londonToUtc, lower, monthFmt, timeFmt, utcDateFmt } from "@/lib/time";
+import type { BinLog } from "@/lib/people";
+import { DAY, dayKey, keyToUtc, londonToUtc, lower, timeFmt, utcDateFmt } from "@/lib/time";
+import { useCol } from "./colors";
 
 type Props = {
   logs: BinLog[];
@@ -13,41 +14,66 @@ type Props = {
   onRemove: (log: BinLog) => void;
 };
 
+const MONTHS = 4;
+const FIRST = { y: 2026, m: 8 }; // sep 2026, move-in
 const level = (n: number) => (n === 0 ? 0 : n === 1 ? 1 : n === 2 ? 2 : n <= 3 ? 3 : 4);
+const monthIdx = (y: number, m: number) => y * 12 + m;
+const monthShort = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "short" });
 
 export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Props) {
+  const colorOf = useCol();
   const todayKey = dayKey(now);
+  const [ty, tm] = todayKey.split("-").map(Number);
+  const firstIdx = monthIdx(FIRST.y, FIRST.m);
+  const maxStart = Math.max(firstIdx, monthIdx(ty, tm - 1) - 2);
+  const [startIdx, setStartIdx] = useState(maxStart);
   const [sel, setSel] = useState(todayKey);
   const [time, setTime] = useState("20:00");
 
-  // sensible default time: now for today, evening for past days
   useEffect(() => {
-    if (sel === todayKey) setTime(timeFmt.format(Date.now()));
-    else setTime("20:00");
+    setTime(sel === todayKey ? timeFmt.format(Date.now()) : "20:00");
   }, [sel, todayKey]);
 
-  const { weeks, byDay } = useMemo(() => {
-    const byDay = new Map<string, BinLog[]>();
+  const byDay = useMemo(() => {
+    const m = new Map<string, BinLog[]>();
     for (const l of logs) {
       const k = dayKey(l.ts);
-      byDay.set(k, [...(byDay.get(k) ?? []), l]);
+      m.set(k, [...(m.get(k) ?? []), l]);
     }
-    const start = Date.UTC(2026, 8, 21); // mon 21 sep 2026, move-in week
-    const today = keyToUtc(todayKey);
-    const endOfThisWeek = today + ((7 - new Date(today).getUTCDay()) % 7) * DAY;
-    const end = Math.max(endOfThisWeek, Date.UTC(2026, 11, 20));
-    const weeks: { key: string; utc: number }[][] = [];
-    for (let t = start; t <= end; t += DAY) {
-      if (weeks.length === 0 || weeks[weeks.length - 1].length === 7) weeks.push([]);
-      weeks[weeks.length - 1].push({ key: new Date(t).toISOString().slice(0, 10), utc: t });
+    return m;
+  }, [logs]);
+
+  const { cells, nWeeks, monthCols, label } = useMemo(() => {
+    const sy = Math.floor(startIdx / 12), sm = startIdx % 12;
+    const ey = Math.floor((startIdx + MONTHS - 1) / 12), em = (startIdx + MONTHS - 1) % 12;
+    const first = Date.UTC(sy, sm, 1);
+    const last = Date.UTC(ey, em + 1, 0);
+    const gridStart = first - ((new Date(first).getUTCDay() + 6) % 7) * DAY;
+    const gridEnd = last + ((7 - new Date(last).getUTCDay()) % 7) * DAY;
+    const cells: { key: string; utc: number; inside: boolean }[] = [];
+    for (let t = gridStart; t <= gridEnd; t += DAY) {
+      cells.push({ key: new Date(t).toISOString().slice(0, 10), utc: t, inside: t >= first && t <= last });
     }
-    return { weeks, byDay };
-  }, [logs, todayKey]);
+    const monthCols: { col: number; name: string }[] = [];
+    for (let i = 0; i < MONTHS; i++) {
+      const t = Date.UTC(sy, sm + i, 1);
+      monthCols.push({ col: Math.floor((t - gridStart) / (7 * DAY)) + 1, name: lower(monthShort.format(t)) });
+    }
+    const label = `${monthCols[0].name} to ${monthCols[MONTHS - 1].name} ${ey}`;
+    return { cells, nWeeks: cells.length / 7, monthCols, label };
+  }, [startIdx]);
 
   const selLogs = (byDay.get(sel) ?? []).slice().sort((a, b) => a.ts - b.ts);
-  const selLabel = lower(utcDateFmt.format(keyToUtc(sel)));
+  const selTotal = selLogs.reduce((s, l) => s + l.bins, 0);
   const isToday = sel === todayKey;
-  const isFuture = sel > todayKey;
+
+  function pickDate(k: string) {
+    if (!k || k > todayKey || k < "2026-09-01") return;
+    setSel(k);
+    const [y, m] = k.split("-").map(Number);
+    const idx = monthIdx(y, m - 1);
+    if (idx < startIdx || idx >= startIdx + MONTHS) setStartIdx(Math.min(maxStart, Math.max(firstIdx, idx - 1)));
+  }
 
   function add(bins: 1 | 2) {
     let ts = londonToUtc(sel, time || "20:00");
@@ -55,59 +81,64 @@ export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Pr
     onAdd(bins, ts);
   }
 
-  let cellIndex = 0;
   return (
     <section className="reveal">
       <h2 className="h2">bin activity</h2>
       <p className="sub">tap a day to see who did what, add a bin u forgot, or delete one of urs</p>
-      <div className="heat-scroll">
-        <div className="heat">
-          <div className="months">
-            {weeks.map((w, i) => {
-              const m = monthFmt.format(w[0].utc);
-              const prev = i > 0 ? monthFmt.format(weeks[i - 1][0].utc) : "";
-              return <span key={i}>{m !== prev ? lower(m) : ""}</span>;
-            })}
+
+      <div className="heat2">
+        <div className="heat-nav">
+          <button className="arrow" disabled={startIdx <= firstIdx} onClick={() => setStartIdx((i) => i - 1)} aria-label="earlier">
+            ‹
+          </button>
+          <span className="mono small muted">{label}</span>
+          <button className="arrow" disabled={startIdx >= maxStart} onClick={() => setStartIdx((i) => i + 1)} aria-label="later">
+            ›
+          </button>
+        </div>
+        <div className="heat-body">
+          <div className="dows2">
+            <span />
+            {["mon", "", "wed", "", "fri", "", "sun"].map((d, i) => <span key={i}>{d}</span>)}
           </div>
-          <div className="grid-wrap">
-            <div className="dows">
-              <span>mon</span><span /><span>wed</span><span /><span>fri</span><span /><span>sun</span>
-            </div>
-            <div className="grid">
-              {weeks.map((w, i) => (
-                <div className="col" key={i}>
-                  {w.map((d) => {
-                    const n = (byDay.get(d.key) ?? []).reduce((s, l) => s + l.bins, 0);
-                    const future = d.key > todayKey;
-                    const idx = cellIndex++;
-                    return (
-                      <button
-                        key={d.key}
-                        className={`cell l${level(n)} ${future ? "future" : ""} ${d.key === sel ? "sel" : ""} ${d.key === todayKey ? "today" : ""}`}
-                        style={{ animationDelay: `${Math.min(idx * 6, 600)}ms` }}
-                        aria-label={`${utcDateFmt.format(d.utc)}: ${n} bins`}
-                        title={`${lower(utcDateFmt.format(d.utc))}: ${n} ${n === 1 ? "bin" : "bins"}`}
-                        disabled={future}
-                        onClick={() => setSel(d.key)}
-                      />
-                    );
-                  })}
-                </div>
+          <div className="heat-grid-wrap">
+            <div className="months2" style={{ gridTemplateColumns: `repeat(${nWeeks}, 1fr)` }}>
+              {monthCols.map((m) => (
+                <span key={m.name} style={{ gridColumn: `${m.col} / span 3` }}>{m.name}</span>
               ))}
             </div>
+            <div className="heat-grid" key={startIdx} style={{ gridTemplateColumns: `repeat(${nWeeks}, 1fr)` }}>
+              {cells.map((d, i) => {
+                const n = (byDay.get(d.key) ?? []).reduce((s, l) => s + l.bins, 0);
+                const future = d.key > todayKey;
+                if (!d.inside) return <span key={d.key} className="cell2 out" />;
+                return (
+                  <button
+                    key={d.key}
+                    className={`cell2 l${level(n)} ${future ? "future" : ""} ${d.key === sel ? "sel" : ""} ${d.key === todayKey ? "today" : ""}`}
+                    style={{ animationDelay: `${Math.min(i * 4, 500)}ms` }}
+                    title={`${lower(utcDateFmt.format(d.utc))}: ${n} ${n === 1 ? "bin" : "bins"}`}
+                    aria-label={`${utcDateFmt.format(d.utc)}: ${n} bins`}
+                    disabled={future}
+                    onClick={() => setSel(d.key)}
+                  />
+                );
+              })}
+            </div>
           </div>
-          <span className="legend">
-            less <i className="cell l0" /><i className="cell l1" /><i className="cell l2" /><i className="cell l3" /><i className="cell l4" /> more
-          </span>
         </div>
+        <span className="legend">
+          less <i className="cell2 l0" /><i className="cell2 l1" /><i className="cell2 l2" /><i className="cell2 l3" /><i className="cell2 l4" /> more
+        </span>
       </div>
 
       <div className="editor" key={sel}>
         <div className="editor-head">
-          <h3>{selLabel}{isToday && <span className="chip">today</span>}</h3>
-          <span className="muted small">
-            {selLogs.reduce((s, l) => s + l.bins, 0)} {selLogs.reduce((s, l) => s + l.bins, 0) === 1 ? "bin" : "bins"}
-          </span>
+          <h3>
+            {lower(utcDateFmt.format(keyToUtc(sel)))}
+            {isToday && <span className="chip">today</span>}
+          </h3>
+          <span className="muted small">{selTotal} {selTotal === 1 ? "bin" : "bins"}</span>
         </div>
 
         {selLogs.length === 0 ? (
@@ -122,9 +153,7 @@ export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Pr
                 </span>
                 <span className="mono muted small">{timeFmt.format(l.ts)}</span>
                 {l.name === who ? (
-                  <button className="del" disabled={pending} onClick={() => onRemove(l)} aria-label="delete this log">
-                    delete
-                  </button>
+                  <button className="del" disabled={pending} onClick={() => onRemove(l)}>delete</button>
                 ) : (
                   <span />
                 )}
@@ -133,19 +162,17 @@ export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Pr
           </ul>
         )}
 
-        {!isFuture && (
+        <div className="add-box">
+          <p className="small">
+            forgot to log one? logging as <strong style={{ color: colorOf(who) }}>{lower(who)}</strong>
+          </p>
           <div className="add-row">
-            <span className="muted small">{isToday ? "add for today at" : "forgot to log? add for this day at"}</span>
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              aria-label="time"
-            />
+            <input type="date" value={sel} min="2026-09-01" max={todayKey} onChange={(e) => pickDate(e.target.value)} aria-label="date" />
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="time" />
             <button className="pill" disabled={pending} onClick={() => add(1)}>+1 bin</button>
             <button className="pill" disabled={pending} onClick={() => add(2)}>+2 bins</button>
           </div>
-        )}
+        </div>
       </div>
     </section>
   );

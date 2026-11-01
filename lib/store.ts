@@ -92,3 +92,48 @@ export async function leave(name: string) {
   if (!redis) gp.__binPresence?.delete(name);
   else await redis.hdel(PRESENCE_KEY, name);
 }
+
+// ---- colours ----
+const COLORS_KEY = "hayloft711:colors";
+const gc = globalThis as unknown as { __binColors?: Record<string, number> };
+
+export async function getColors(): Promise<Record<string, number>> {
+  if (!redis) return { ...(gc.__binColors ?? {}) };
+  const all = (await redis.hgetall<Record<string, number | string>>(COLORS_KEY)) ?? {};
+  return Object.fromEntries(Object.entries(all).map(([k, v]) => [k, Number(v)]));
+}
+
+export async function saveColor(name: string, hue: number) {
+  if (!redis) {
+    gc.__binColors = { ...(gc.__binColors ?? {}), [name]: hue };
+    return;
+  }
+  await redis.hset(COLORS_KEY, { [name]: hue });
+}
+
+// ---- pings: nudge someone to take the bins down ----
+export type Ping = { id: string; from: string; to: string; ts: number };
+const PINGS_KEY = "hayloft711:pings";
+const gpi = globalThis as unknown as { __binPings?: Map<string, Ping> };
+const PING_KEEP = 21 * 86_400_000;
+
+export async function getPings(): Promise<Ping[]> {
+  let all: Ping[];
+  if (!redis) all = [...(gpi.__binPings?.values() ?? [])];
+  else {
+    const raw = (await redis.hgetall<Record<string, unknown>>(PINGS_KEY)) ?? {};
+    all = Object.values(raw).map((v) => (typeof v === "string" ? JSON.parse(v) : v) as Ping);
+    const old = all.filter((p) => Date.now() - p.ts > PING_KEEP).map((p) => p.id);
+    if (old.length) await redis.hdel(PINGS_KEY, ...old);
+  }
+  return all.filter((p) => Date.now() - p.ts <= PING_KEEP).sort((a, b) => b.ts - a.ts);
+}
+
+export async function addPing(p: Ping) {
+  if (!redis) {
+    if (!gpi.__binPings) gpi.__binPings = new Map();
+    gpi.__binPings.set(p.id, p);
+    return;
+  }
+  await redis.hset(PINGS_KEY, { [p.id]: JSON.stringify(p) });
+}

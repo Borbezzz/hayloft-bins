@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { PASS_COOKIE, WHO_COOKIE, passToken } from "@/lib/auth";
 import { isPerson } from "@/lib/people";
-import { getLogs } from "@/lib/store";
+import { getColors, getLogs, getPings } from "@/lib/store";
 import Gate from "./components/Gate";
 import WhoPicker from "./components/WhoPicker";
 import Dashboard from "./components/Dashboard";
@@ -22,6 +22,6 @@ async function Inner() {
   const who = c.get(WHO_COOKIE)?.value;
   if (!isPerson(who)) return <WhoPicker />;
 
-  const logs = await getLogs();
-  return <Dashboard who={who} logs={logs} now={Date.now()} />;
+  const [logs, colors, pings] = await Promise.all([getLogs(), getColors(), getPings()]);
+  return <Dashboard who={who} logs={logs} colors={colors} pings={pings} now={Date.now()} />;
 }

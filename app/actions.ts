@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { PASS_COOKIE, WHO_COOKIE, YEAR, passToken, sitePassword } from "@/lib/auth";
-import { isPerson, type BinLog, type Person } from "@/lib/people";
-import { addLog, deleteLog, getLog } from "@/lib/store";
+import { clash, isPerson, type BinLog, type Colors, type Person } from "@/lib/people";
+import { addLog, addPing, deleteLog, getColors, getLog, getPings, saveColor } from "@/lib/store";
 
 const cookieOpts = {
   httpOnly: true,
@@ -86,4 +86,34 @@ export async function restoreLog(log: BinLog): Promise<Result> {
   await addLog(clean);
   revalidatePath("/");
   return { ok: true, log: clean };
+}
+
+export async function setMyColor(hue: number): Promise<{ ok: true } | { ok: false; error: string }> {
+  const who = await me();
+  if (!who) return { ok: false, error: "who even are u" };
+  if (!Number.isFinite(hue) || hue < 0 || hue >= 360) return { ok: false, error: "that's not a colour" };
+  const colors = await getColors();
+  const c = clash(hue, colors as Colors, who);
+  if (c) return { ok: false, error: `too close to ${c.toLowerCase()}'s colour` };
+  await saveColor(who, Math.round(hue));
+  revalidatePath("/");
+  return { ok: true };
+}
+
+const PING_COOLDOWN = 6 * 60 * 60 * 1000;
+
+export async function pingPerson(to: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const who = await me();
+  if (!who) return { ok: false, error: "who even are u" };
+  if (!isPerson(to)) return { ok: false, error: "who?" };
+  if (to === who) return { ok: false, error: "u can't ping urself. just take the bins down" };
+  const pings = await getPings();
+  const recent = pings.find((p) => p.from === who && p.to === to && Date.now() - p.ts < PING_COOLDOWN);
+  if (recent) {
+    const h = Math.ceil((PING_COOLDOWN - (Date.now() - recent.ts)) / 3_600_000);
+    return { ok: false, error: `u already pinged ${to.toLowerCase()}. chill for ${h}h` };
+  }
+  await addPing({ id: randomUUID(), from: who, to, ts: Date.now() });
+  revalidatePath("/");
+  return { ok: true };
 }

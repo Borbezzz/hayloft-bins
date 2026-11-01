@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { PEOPLE, colorOf, type BinLog, type Person } from "@/lib/people";
+import { PEOPLE, type BinLog, type Colors, type Person } from "@/lib/people";
 import { DAY, dateFmt, lower, timeFmt } from "@/lib/time";
-import { forgetName, logBins, removeLog, restoreLog } from "../actions";
+import { forgetName, logBins, pingPerson, removeLog, restoreLog } from "../actions";
+import type { Ping } from "@/lib/store";
+import UpNext from "./UpNext";
 import Presence from "./Presence";
 import Heatmap from "./Heatmap";
-import { Race, Share, Stats, When } from "./Charts";
+import { LastSeen, Stats, Timeline, Waffle, Weekly, When } from "./Charts";
+import ColorPicker from "./ColorPicker";
+import { ColorsProvider, useCol } from "./colors";
 
 const ROASTS = [
   "has never touched a bin bag",
@@ -27,11 +31,22 @@ function ago(ms: number) {
 
 type Toast = { id: number; text: string; undo?: () => void };
 type Burst = { id: number; x: number; y: number };
-const BURST_COLORS = PEOPLE.map((p) => colorOf(p));
 
-type Props = { who: Person; logs: BinLog[]; now: number };
+type Props = { who: Person; logs: BinLog[]; now: number; colors: Colors; pings: Ping[] };
 
-export default function Dashboard({ who, logs, now }: Props) {
+export default function Dashboard({ colors, ...rest }: Props) {
+  return (
+    <ColorsProvider value={colors}>
+      <Inner {...rest} />
+    </ColorsProvider>
+  );
+}
+
+const POP = ["oklch(0.9 0.2 128)", "oklch(0.72 0.19 350)", "oklch(0.8 0.15 80)", "oklch(0.7 0.15 230)"];
+
+function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
+  const colorOf = useCol();
+  const BURST_COLORS = [colorOf(who), ...POP];
   const [pending, start] = useTransition();
   const [toast, setToast] = useState<Toast | null>(null);
   const [bursts, setBursts] = useState<Burst[]>([]);
@@ -87,6 +102,14 @@ export default function Dashboard({ who, logs, now }: Props) {
     });
   }
 
+  function ping(name: string, el?: HTMLElement | null) {
+    burstFrom(el ?? null);
+    start(async () => {
+      const r = await pingPerson(name);
+      say(r.ok ? `pinged ${lower(name)}. +10 psi, the pressure is on` : r.error);
+    });
+  }
+
   function remove(log: BinLog) {
     start(async () => {
       const r = await removeLog(log.id);
@@ -116,6 +139,10 @@ export default function Dashboard({ who, logs, now }: Props) {
   const last = logs[0];
   const nonZero = board.filter((b) => b.points > 0);
   const lowestNonZero = nonZero.length > 1 ? nonZero[nonZero.length - 1].points : -1;
+  const avg = total / PEOPLE.length;
+  const minPts = Math.min(...board.map((b) => b.points));
+  const bottom = board.filter((b) => b.points === minPts);
+  const belowAvg = board.filter((b) => b.points < avg && b.points > minPts);
 
   let status: string;
   if (!last) status = "no bins ever. the kitchen is a biohazard";
@@ -140,6 +167,7 @@ export default function Dashboard({ who, logs, now }: Props) {
       </header>
 
       <Presence who={who} />
+      <ColorPicker who={who} />
 
       <section className="hero">
         <h1 className="title">
@@ -156,8 +184,8 @@ export default function Dashboard({ who, logs, now }: Props) {
           </button>
         </div>
         <p className="for-when">
-          logs for <strong>today, {lower(dateFmt.format(now))}</strong>, right now. different day or wanna delete one? use the
-          calendar further down
+          logging as <strong style={{ color: colorOf(who) }}>{lower(who)}</strong> for <strong>today, {lower(dateFmt.format(now))}</strong>,
+          right now. different day or wanna delete one? use the calendar further down
         </p>
         <p className="me-line">
           {me.points === 0
@@ -167,21 +195,27 @@ export default function Dashboard({ who, logs, now }: Props) {
         <p className="status">{status}</p>
       </section>
 
-      {shame.length > 0 && (
-        <section className="shame reveal">
-          <h2 className="h2">hall of shame</h2>
+      <UpNext logs={logs} pings={pings} now={now} who={who} pending={pending} onPing={(n) => ping(n)} />
+
+      <section className="shame reveal">
+        <h2 className="h2">hall of shame</h2>
+        {shame.length > 0 ? (
           <p className="shame-line">
-            {shame.map((s, i) => (
-              <span key={s.name}>
-                <strong>{lower(s.name)}</strong>
-                {i < shame.length - 2 ? ", " : i === shame.length - 2 ? " & " : ""}
-              </span>
-            ))}{" "}
-            {shame.length === 1 ? "has" : "have"} taken down <em>zero</em> bins. {total} bins have gone down so far. none of
-            them were theirs.
+            <Names list={shame.map((s) => s.name)} /> {shame.length === 1 ? "has" : "have"} taken down <em>zero</em> bins. {total} bins
+            have gone down so far. none of them were theirs.
           </p>
-        </section>
-      )}
+        ) : (
+          <p className="shame-line">
+            the flat average is {avg.toFixed(1)} bins. <Names list={bottom.map((b) => b.name)} /> {bottom.length === 1 ? "is" : "are"}{" "}
+            bringing up the rear with <em>only {bottom[0]?.points}</em>.
+          </p>
+        )}
+        {belowAvg.length > 0 && (
+          <p className="shame-sub">
+            below the average of {avg.toFixed(1)}: {belowAvg.map((b) => `${lower(b.name)} (${b.points})`).join(", ")}
+          </p>
+        )}
+      </section>
 
       <section className="reveal">
         <h2 className="h2">the bin board</h2>
@@ -213,9 +247,11 @@ export default function Dashboard({ who, logs, now }: Props) {
       </section>
 
       <Stats logs={logs} now={now} />
-      <Share board={board} total={total} />
-      <Race logs={logs} now={now} />
+      <Waffle board={board} total={total} />
+      <Weekly logs={logs} now={now} />
+      <Timeline logs={logs} now={now} board={board} />
       <When logs={logs} />
+      <LastSeen logs={logs} now={now} />
       <Heatmap logs={logs} now={now} who={who} pending={pending} onAdd={addOn} onRemove={remove} />
 
       <section className="reveal">
@@ -293,5 +329,18 @@ export default function Dashboard({ who, logs, now }: Props) {
         </div>
       )}
     </main>
+  );
+}
+
+function Names({ list }: { list: string[] }) {
+  return (
+    <>
+      {list.map((n, i) => (
+        <span key={n}>
+          <strong>{lower(n)}</strong>
+          {i < list.length - 2 ? ", " : i === list.length - 2 ? " & " : ""}
+        </span>
+      ))}
+    </>
   );
 }

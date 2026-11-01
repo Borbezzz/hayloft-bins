@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { colorOf } from "@/lib/people";
+import { useCol } from "./colors";
 import { lower } from "@/lib/time";
 
 function joinNames(names: string[]) {
@@ -14,6 +14,7 @@ function joinNames(names: string[]) {
 export default function Presence({ who }: { who: string }) {
   const [online, setOnline] = useState<string[]>([who]);
   const router = useRouter();
+  const colorOf = useCol();
 
   useEffect(() => {
     let alive = true;

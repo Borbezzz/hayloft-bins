@@ -50,9 +50,20 @@ export const SEED_LOGS: BinLog[] = seed.map(([iso, name, bins], i) => ({
   fromChat: true,
 }));
 
-// one colour per flatmate, evenly spread hues
-const HUES = [25, 55, 85, 130, 160, 195, 230, 265, 300, 340];
-export function colorOf(name: string) {
-  const i = Math.max(0, PEOPLE.indexOf(name as Person));
-  return `oklch(0.7 0.17 ${HUES[i]})`;
+// colours: everyone picks a hue, grey until they do
+export const MIN_HUE_GAP = 30;
+export const GREY = "oklch(0.72 0.012 270)";
+export type Colors = Partial<Record<Person, number>>;
+
+export const hueColor = (h: number) => `oklch(0.72 0.17 ${Math.round(h)})`;
+export const hueDist = (a: number, b: number) => {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+};
+/** the person whose colour is too close to this hue, if any */
+export function clash(hue: number, colors: Colors, me: string): Person | null {
+  for (const [n, h] of Object.entries(colors)) {
+    if (n !== me && typeof h === "number" && hueDist(h, hue) < MIN_HUE_GAP) return n as Person;
+  }
+  return null;
 }
