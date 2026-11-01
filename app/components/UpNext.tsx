@@ -84,8 +84,21 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
   const rows = useMemo(() => computePressure(logs, pings, now), [logs, pings, now]);
   const example = useMemo(() => workedExample(rows, who), [rows, who]);
   const max = Math.max(1, ...rows.map((r) => r.score));
+  const lo = Math.min(...rows.map((r) => r.score));
+  const hi = Math.max(...rows.map((r) => r.score));
+  // blue (lowest psi) -> green -> yellow -> orange -> red (highest psi)
+  const heat = (score: number) => {
+    const t = hi === lo ? 0 : (score - lo) / (hi - lo);
+    const h = 250 - t * 225;
+    const l = 0.66 + 0.16 * Math.exp(-(((h - 95) / 40) ** 2)); // lift the yellows so they don't go mustard
+    return `oklch(${l.toFixed(3)} 0.18 ${Math.round(h)})`;
+  };
   const top = rows[0];
-  const iAmNext = top.name === who;
+  const tied = rows.filter((r) => r.score === top.score);
+  const iAmNext = tied.some((r) => r.name === who);
+  const join = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} & ${xs[xs.length - 1]}`);
+  const nextNames = join(tied.map((r) => (r.name === who ? "you" : lower(r.name))));
+  const tiedPingers = [...new Set(tied.flatMap((r) => r.pings.map((p) => lower(p.from))))];
 
   const why = (r: (typeof rows)[number]) => {
     const bits = [`${r.points} ${r.points === 1 ? "bin" : "bins"}`];
@@ -93,6 +106,7 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
     if (r.pings.length) bits.push(`pinged ${r.pings.length}x`);
     return bits.join(" · ");
   };
+  const sameWhy = tied.every((r) => why(r) === why(top));
 
   return (
     <section className="upnext reveal">
@@ -101,10 +115,13 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
 
       <div className="next-hero" style={{ ["--c" as string]: colorOf(top.name) }}>
         <span className="next-label">up next</span>
-        <span className="next-name">{iAmNext ? "it's you. go" : lower(top.name)}</span>
+        <span className="next-name">
+          {tied.length === 1 ? (iAmNext ? "it's you. go" : nextNames) : iAmNext ? `${nextNames}. go` : nextNames}
+        </span>
         <span className="next-why">
-          {top.score} psi · {why(top)}
-          {top.pings.length > 0 && ` (by ${[...new Set(top.pings.map((p) => lower(p.from)))].join(", ")})`}
+          {tied.length > 1 ? `tied at ${top.score} psi each` : `${top.score} psi`}
+          {sameWhy ? ` · ${why(top)}` : ""}
+          {tiedPingers.length > 0 && ` · pinged by ${tiedPingers.join(", ")}`}
         </span>
       </div>
 
@@ -113,7 +130,7 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
           const pingedByMe = pings.some((p) => p.from === who && p.to === r.name && now - p.ts < 7 * DAY);
           return (
             <li key={r.name} className={r.name === who ? "me" : ""}>
-              <span className="rank">{i + 1}</span>
+              <span className="rank">{rows.filter((x) => x.score > r.score).length + 1}</span>
               <span className="who">
                 <span>
                   {lower(r.name)}
@@ -124,10 +141,10 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
               <span className="gauge">
                 <span
                   className="gauge-fill"
-                  style={{ width: `${(r.score / max) * 100}%`, background: colorOf(r.name), animationDelay: `${i * 50}ms` }}
+                  style={{ width: `${Math.max(2, (r.score / max) * 100)}%`, background: heat(r.score), animationDelay: `${i * 50}ms` }}
                 />
               </span>
-              <span className="psi mono">{r.score}</span>
+              <span className="psi mono" style={{ color: heat(r.score) }}>{r.score}</span>
               {r.name === who ? (
                 <span />
               ) : (
