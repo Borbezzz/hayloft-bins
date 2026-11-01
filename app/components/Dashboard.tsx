@@ -288,9 +288,6 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
         )}
       </section>
 
-      <footer className="fine foot">
-        made for hayloft 711. stuff from before this site existed was pulled from the gc. cookies only remember who you are
-      </footer>
 
       {bursts.map((b) => (
         <span key={b.id} className="burst" style={{ left: b.x, top: b.y }} aria-hidden>
