@@ -14,5 +14,5 @@ export function passToken() {
 
 export const YEAR = 60 * 60 * 24 * 365;
 
-// How long after logging you can still undo your own entry.
-export const UNDO_WINDOW_MS = 15 * 60 * 1000;
+
+

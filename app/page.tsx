@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { PASS_COOKIE, WHO_COOKIE, UNDO_WINDOW_MS, passToken } from "@/lib/auth";
+import { PASS_COOKIE, WHO_COOKIE, passToken } from "@/lib/auth";
 import { isPerson } from "@/lib/people";
 import { getLogs } from "@/lib/store";
 import Gate from "./components/Gate";
@@ -23,5 +23,5 @@ async function Inner() {
   if (!isPerson(who)) return <WhoPicker />;
 
   const logs = await getLogs();
-  return <Dashboard who={who} logs={logs} now={Date.now()} undoWindowMs={UNDO_WINDOW_MS} />;
+  return <Dashboard who={who} logs={logs} now={Date.now()} />;
 }

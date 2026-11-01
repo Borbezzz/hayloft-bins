@@ -63,3 +63,32 @@ export async function deleteLog(id: string) {
   }
   await redis.hdel(LOGS_KEY, id);
 }
+
+// ---- presence: who has the site open right now ----
+const PRESENCE_KEY = "hayloft711:presence";
+const PRESENCE_TTL = 45_000;
+const gp = globalThis as unknown as { __binPresence?: Map<string, number> };
+
+export async function heartbeat(name: string): Promise<string[]> {
+  const now = Date.now();
+  let all: Record<string, number>;
+  if (!redis) {
+    if (!gp.__binPresence) gp.__binPresence = new Map();
+    gp.__binPresence.set(name, now);
+    all = Object.fromEntries(gp.__binPresence);
+  } else {
+    await redis.hset(PRESENCE_KEY, { [name]: now });
+    all = ((await redis.hgetall<Record<string, number | string>>(PRESENCE_KEY)) ?? {}) as Record<string, number>;
+  }
+  const live = Object.entries(all)
+    .filter(([, t]) => now - Number(t) < PRESENCE_TTL)
+    .map(([n]) => n);
+  const stale = Object.keys(all).filter((n) => !live.includes(n));
+  if (redis && stale.length) await redis.hdel(PRESENCE_KEY, ...stale);
+  return live.sort();
+}
+
+export async function leave(name: string) {
+  if (!redis) gp.__binPresence?.delete(name);
+  else await redis.hdel(PRESENCE_KEY, name);
+}

@@ -3,8 +3,8 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
-import { PASS_COOKIE, WHO_COOKIE, YEAR, UNDO_WINDOW_MS, passToken, sitePassword } from "@/lib/auth";
-import { isPerson } from "@/lib/people";
+import { PASS_COOKIE, WHO_COOKIE, YEAR, passToken, sitePassword } from "@/lib/auth";
+import { isPerson, type BinLog, type Person } from "@/lib/people";
 import { addLog, deleteLog, getLog } from "@/lib/store";
 
 const cookieOpts = {
@@ -15,20 +15,19 @@ const cookieOpts = {
   maxAge: YEAR,
 };
 
-async function authed() {
+const EARLIEST = new Date("2026-09-01T00:00:00Z").getTime();
+
+async function me(): Promise<Person | null> {
   const c = await cookies();
-  return c.get(PASS_COOKIE)?.value === passToken();
+  if (c.get(PASS_COOKIE)?.value !== passToken()) return null;
+  const who = c.get(WHO_COOKIE)?.value;
+  return isPerson(who) ? who : null;
 }
 
 export async function login(_prev: string | null, form: FormData): Promise<string | null> {
   const pw = String(form.get("password") ?? "").trim().toLowerCase();
   if (pw !== sitePassword().toLowerCase()) {
-    const nopes = [
-      "nah. try again",
-      "wrong 😭",
-      "ain't no way that's it",
-      "icl that's not it",
-    ];
+    const nopes = ["nah. try again", "wrong 😭", "ain't no way that's it", "icl that's not it"];
     return nopes[Math.floor(Math.random() * nopes.length)];
   }
   (await cookies()).set(PASS_COOKIE, passToken(), cookieOpts);
@@ -37,8 +36,9 @@ export async function login(_prev: string | null, form: FormData): Promise<strin
 }
 
 export async function pickName(name: string) {
-  if (!(await authed()) || !isPerson(name)) return;
-  (await cookies()).set(WHO_COOKIE, name, cookieOpts);
+  const c = await cookies();
+  if (c.get(PASS_COOKIE)?.value !== passToken() || !isPerson(name)) return;
+  c.set(WHO_COOKIE, name, cookieOpts);
   revalidatePath("/");
 }
 
@@ -47,23 +47,43 @@ export async function forgetName() {
   revalidatePath("/");
 }
 
-export async function logBins(bins: number): Promise<{ id: string } | { error: string }> {
-  if (!(await authed())) return { error: "ur not logged in" };
-  const who = (await cookies()).get(WHO_COOKIE)?.value;
-  if (!isPerson(who)) return { error: "who even are u" };
-  if (bins !== 1 && bins !== 2) return { error: "it's 1 or 2 bins bro" };
-  const id = randomUUID();
-  await addLog({ id, name: who, bins, ts: Date.now() });
+type Result = { ok: true; log: BinLog } | { ok: false; error: string };
+
+/** Log bins for yourself. ts defaults to now; pass a ts to backfill a past day. */
+export async function logBins(bins: number, ts?: number): Promise<Result> {
+  const who = await me();
+  if (!who) return { ok: false, error: "who even are u" };
+  if (bins !== 1 && bins !== 2) return { ok: false, error: "it's 1 or 2 bins" };
+  const now = Date.now();
+  const when = ts ?? now;
+  if (!Number.isFinite(when) || when < EARLIEST) return { ok: false, error: "that's before we even moved in" };
+  if (when > now + 5 * 60_000) return { ok: false, error: "u can't log bins from the future" };
+  const log: BinLog = { id: randomUUID(), name: who, bins, ts: when };
+  await addLog(log);
   revalidatePath("/");
-  return { id };
+  return { ok: true, log };
 }
 
-export async function undoLog(id: string) {
-  if (!(await authed())) return;
-  const who = (await cookies()).get(WHO_COOKIE)?.value;
+/** Remove one of your own logs (any day). Returns it so the client can offer undo. */
+export async function removeLog(id: string): Promise<Result> {
+  const who = await me();
+  if (!who) return { ok: false, error: "who even are u" };
   const log = await getLog(id);
-  if (!log || log.name !== who || log.fromChat) return;
-  if (Date.now() - log.ts > UNDO_WINDOW_MS) return;
+  if (!log) return { ok: false, error: "already gone" };
+  if (log.name !== who) return { ok: false, error: "that's not urs to delete" };
   await deleteLog(id);
   revalidatePath("/");
+  return { ok: true, log };
+}
+
+/** Put back a log you just removed. */
+export async function restoreLog(log: BinLog): Promise<Result> {
+  const who = await me();
+  if (!who || log?.name !== who) return { ok: false, error: "nope" };
+  if (log.bins !== 1 && log.bins !== 2) return { ok: false, error: "nope" };
+  const clean: BinLog = { id: String(log.id), name: who, bins: log.bins, ts: Number(log.ts) };
+  if (log.fromChat) clean.fromChat = true;
+  await addLog(clean);
+  revalidatePath("/");
+  return { ok: true, log: clean };
 }

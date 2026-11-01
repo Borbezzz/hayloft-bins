@@ -4,8 +4,10 @@ who's actually taking the bins down. Next.js 16 + Upstash Redis.
 
 - password gate (default `trash`, override with `SITE_PASSWORD`)
 - pick your name once (cookie), "not you? switch" to change
-- log 1 or 2 bins, undo your own log within 15 min
-- leaderboard, hall of shame, github-style heatmap, full log
+- log 1 or 2 bins with confetti, undo from the toast
+- tap any day on the heatmap to add a forgotten bin for that day or delete one of yours (with undo)
+- live "who's here rn" tracker (heartbeat every 15s, data auto-refreshes every 30s)
+- leaderboard, hall of shame, stats, share bar, bin race chart, bin days / bin o'clock, full log
 - past runs from the group chat are seeded on first load (`lib/people.ts`)
 
 ## deploy on vercel

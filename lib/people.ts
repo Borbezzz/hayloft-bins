@@ -49,3 +49,10 @@ export const SEED_LOGS: BinLog[] = seed.map(([iso, name, bins], i) => ({
   ts: new Date(iso).getTime(),
   fromChat: true,
 }));
+
+// one colour per flatmate, evenly spread hues
+const HUES = [25, 55, 85, 130, 160, 195, 230, 265, 300, 340];
+export function colorOf(name: string) {
+  const i = Math.max(0, PEOPLE.indexOf(name as Person));
+  return `oklch(0.7 0.17 ${HUES[i]})`;
+}
