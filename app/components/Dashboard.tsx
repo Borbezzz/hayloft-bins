@@ -140,7 +140,6 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
   const myRank = board.filter((b) => b.points > me.points).length + 1;
   const last = logs[0];
   const nonZero = board.filter((b) => b.points > 0);
-  const lowestNonZero = nonZero.length > 1 ? nonZero[nonZero.length - 1].points : -1;
   const avg = total / PEOPLE.length;
   const minPts = Math.min(...board.map((b) => b.points));
   const bottom = board.filter((b) => b.points === minPts);
@@ -234,7 +233,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
           {board.map((b, i) => {
             const rank = board.filter((x) => x.points > b.points).length + 1;
             const note =
-              b.points === 0 ? roastFor(b.name) : b.points === lowestNonZero ? "doing the bare minimum" : "";
+              b.points === 0 ? roastFor(b.name) : "";
             return (
               <li key={b.name} className={`row ${b.points === 0 ? "zero" : ""} ${b.name === who ? "me" : ""}`}>
                 <span className="rank">{rank}</span>
