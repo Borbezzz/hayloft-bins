@@ -132,7 +132,7 @@ export function Timeline({ logs, now, board }: { logs: BinLog[]; now: number; bo
   const end = Math.max(now, MOVE_IN + 14 * DAY);
   const pos = (t: number) => `${((t - MOVE_IN) / (end - MOVE_IN)) * 100}%`;
   const months: { t: number; label: string }[] = [];
-  for (let m = 9; m <= 20; m++) {
+  for (let m = 9; Date.UTC(2026, m, 1) < end; m++) {
     const t = Date.UTC(2026, m, 1);
     if (t > MOVE_IN && t < end - (end - MOVE_IN) * 0.08) months.push({ t, label: lower(new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "short" }).format(t)) });
   }
