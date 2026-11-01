@@ -97,11 +97,11 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
   return (
     <section className="upnext reveal">
       <h2 className="h2">who should go next</h2>
-      <p className="sub">bin pressure, based on how many bins u took, how long it&apos;s been, and how many times u got pinged</p>
+      <p className="sub">bin pressure, based on how many bins you took, how long it&apos;s been, and how many times you got pinged</p>
 
       <div className="next-hero" style={{ ["--c" as string]: colorOf(top.name) }}>
         <span className="next-label">up next</span>
-        <span className="next-name">{iAmNext ? "it's u. go" : lower(top.name)}</span>
+        <span className="next-name">{iAmNext ? "it's you. go" : lower(top.name)}</span>
         <span className="next-why">
           {top.score} psi · {why(top)}
           {top.pings.length > 0 && ` (by ${[...new Set(top.pings.map((p) => lower(p.from)))].join(", ")})`}
@@ -117,7 +117,7 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
               <span className="who">
                 <span>
                   {lower(r.name)}
-                  {r.name === who && <span className="you"> (u)</span>}
+                  {r.name === who && <span className="you"> (you)</span>}
                 </span>
                 <span className="why">{why(r)}</span>
               </span>
@@ -142,16 +142,16 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
       <div className="how">
         <h3>how the score works</h3>
         <ul>
-          <li><strong>+12 psi</strong> for every bin ur below the flat average (and -12 for every bin above it)</li>
-          <li><strong>+1.5 psi</strong> for every day since u last took the bins down, maxes out at 30 days. never gone = counted from move-in</li>
-          <li><strong>+10 psi</strong> for every ping since ur last bin run. take the bins down and ur pings reset</li>
-          <li>u can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping urself</li>
+          <li><strong>+12 psi</strong> for every bin you're below the flat average (and -12 for every bin above it)</li>
+          <li><strong>+1.5 psi</strong> for every day since you last took the bins down, maxes out at 30 days. never gone = counted from move-in</li>
+          <li><strong>+10 psi</strong> for every ping since your last bin run. take the bins down and your pings reset</li>
+          <li>you can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping yourself</li>
         </ul>
         <details className="formula">
           <summary>curious how the score is actually calculated?</summary>
           <div className="tex" dangerouslySetInnerHTML={{ __html: FORMULA }} />
           <div className="tex small-tex" dangerouslySetInnerHTML={{ __html: WHERE }} />
-          <p className="fine">it&apos;s the same thing as the list above, every weird constant works out to 12, 1.5 and 10. here it is with ur actual numbers rn:</p>
+          <p className="fine">it&apos;s the same thing as the list above, every weird constant works out to 12, 1.5 and 10. here it is with your actual numbers rn:</p>
           <div className="tex worked" dangerouslySetInnerHTML={{ __html: example }} />
         </details>
       </div>

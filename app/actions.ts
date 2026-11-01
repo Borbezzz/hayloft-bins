@@ -52,12 +52,12 @@ type Result = { ok: true; log: BinLog } | { ok: false; error: string };
 /** Log bins for yourself. ts defaults to now; pass a ts to backfill a past day. */
 export async function logBins(bins: number, ts?: number): Promise<Result> {
   const who = await me();
-  if (!who) return { ok: false, error: "who even are u" };
+  if (!who) return { ok: false, error: "who even are you" };
   if (bins !== 1 && bins !== 2) return { ok: false, error: "it's 1 or 2 bins" };
   const now = Date.now();
   const when = ts ?? now;
   if (!Number.isFinite(when) || when < EARLIEST) return { ok: false, error: "that's before we even moved in" };
-  if (when > now + 5 * 60_000) return { ok: false, error: "u can't log bins from the future" };
+  if (when > now + 5 * 60_000) return { ok: false, error: "you can't log bins from the future" };
   const log: BinLog = { id: randomUUID(), name: who, bins, ts: when };
   await addLog(log);
   revalidatePath("/");
@@ -67,10 +67,10 @@ export async function logBins(bins: number, ts?: number): Promise<Result> {
 /** Remove one of your own logs (any day). Returns it so the client can offer undo. */
 export async function removeLog(id: string): Promise<Result> {
   const who = await me();
-  if (!who) return { ok: false, error: "who even are u" };
+  if (!who) return { ok: false, error: "who even are you" };
   const log = await getLog(id);
   if (!log) return { ok: false, error: "already gone" };
-  if (log.name !== who) return { ok: false, error: "that's not urs to delete" };
+  if (log.name !== who) return { ok: false, error: "that's not yours to delete" };
   await deleteLog(id);
   revalidatePath("/");
   return { ok: true, log };
@@ -90,7 +90,7 @@ export async function restoreLog(log: BinLog): Promise<Result> {
 
 export async function setMyColor(hue: number): Promise<{ ok: true } | { ok: false; error: string }> {
   const who = await me();
-  if (!who) return { ok: false, error: "who even are u" };
+  if (!who) return { ok: false, error: "who even are you" };
   if (!Number.isFinite(hue) || hue < 0 || hue >= 360) return { ok: false, error: "that's not a colour" };
   const colors = await getColors();
   const c = clash(hue, colors as Colors, who);
@@ -104,14 +104,14 @@ const PING_COOLDOWN = 7 * 24 * 60 * 60 * 1000; // one ping per person per week
 
 export async function pingPerson(to: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const who = await me();
-  if (!who) return { ok: false, error: "who even are u" };
+  if (!who) return { ok: false, error: "who even are you" };
   if (!isPerson(to)) return { ok: false, error: "who?" };
-  if (to === who) return { ok: false, error: "u can't ping urself. just take the bins down" };
+  if (to === who) return { ok: false, error: "you can't ping yourself. just take the bins down" };
   const pings = await getPings();
   const recent = pings.find((p) => p.from === who && p.to === to && Date.now() - p.ts < PING_COOLDOWN);
   if (recent) {
     const d = Math.ceil((PING_COOLDOWN - (Date.now() - recent.ts)) / 86_400_000);
-    return { ok: false, error: `u already pinged ${to.toLowerCase()} this week. try again in ${d}d` };
+    return { ok: false, error: `you already pinged ${to.toLowerCase()} this week. try again in ${d}d` };
   }
   await addPing({ id: randomUUID(), from: who, to, ts: Date.now() });
   revalidatePath("/");

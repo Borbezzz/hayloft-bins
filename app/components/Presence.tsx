@@ -50,7 +50,7 @@ export default function Presence({ who }: { who: string }) {
   const others = online.filter((n) => n !== who);
   const label =
     others.length === 0
-      ? "just u here rn. it's quiet"
+      ? "just you here rn. it's quiet"
       : `${joinNames(others.map(lower))} ${others.length === 1 ? "is" : "are"} also browsing bin statistics rn`;
 
   return (

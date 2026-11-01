@@ -8,9 +8,9 @@ export default function WhoPicker() {
   const [pending, start] = useTransition();
   return (
     <main className="shell narrow">
-      <p className="kicker">ok ur in</p>
-      <h1 className="title">who r u</h1>
-      <p className="lede">tap ur name. u only gotta do this once</p>
+      <p className="kicker">ok you're in</p>
+      <h1 className="title">who are you</h1>
+      <p className="lede">tap your name. you only gotta do this once</p>
       <div className="names">
         {PEOPLE.map((p) => (
           <button

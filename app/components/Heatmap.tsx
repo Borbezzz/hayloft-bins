@@ -84,7 +84,7 @@ export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Pr
   return (
     <section className="reveal">
       <h2 className="h2">bin activity</h2>
-      <p className="sub">tap a day to see who did what, add a bin u forgot, or delete one of urs</p>
+      <p className="sub">tap a day to see who did what, add a bin you forgot, or delete one of yours</p>
 
       <div className="heat2">
         <div className="heat-nav">

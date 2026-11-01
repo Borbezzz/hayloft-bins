@@ -90,7 +90,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
     start(async () => {
       const r = await logBins(bins);
       if (!r.ok) return say(r.error);
-      say(`${bins === 2 ? "+2. the flat thanks u" : "+1. noted"} · today ${timeFmt.format(r.log.ts)}`, () => undoAdd(r.log));
+      say(`${bins === 2 ? "+2. the flat thanks you" : "+1. noted"} · today ${timeFmt.format(r.log.ts)}`, () => undoAdd(r.log));
     });
   }
 
@@ -114,7 +114,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
     start(async () => {
       const r = await removeLog(log.id);
       if (!r.ok) return say(r.error);
-      say(`deleted ur ${log.bins} ${log.bins === 1 ? "bin" : "bins"} from ${lower(dateFmt.format(log.ts))}`, () =>
+      say(`deleted your ${log.bins} ${log.bins === 1 ? "bin" : "bins"} from ${lower(dateFmt.format(log.ts))}`, () =>
         start(async () => {
           const back = await restoreLog(r.log);
           say(back.ok ? "it's back" : back.error);
@@ -171,7 +171,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
 
       <section className="hero">
         <h1 className="title">
-          did u take the <span className="hl">bins</span> down?
+          did you take the <span className="hl">bins</span> down?
         </h1>
         <p className="log-label">
           <span className="arrow-down" aria-hidden>↓</span> took the bins down? log it here
@@ -192,8 +192,8 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
         </p>
         <p className="me-line">
           {me.points === 0
-            ? "u have 0 bins. the whole flat can see this btw"
-            : `ur #${myRank} with ${me.points} ${me.points === 1 ? "bin" : "bins"}`}
+            ? "you have 0 bins. the whole flat can see this btw"
+            : `you're #${myRank} with ${me.points} ${me.points === 1 ? "bin" : "bins"}`}
         </p>
         <p className="status">{status}</p>
       </section>
@@ -232,7 +232,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
                 <span className="rank">{rank}</span>
                 <span className="who">
                   {lower(b.name)}
-                  {b.name === who && <span className="you"> (u)</span>}
+                  {b.name === who && <span className="you"> (you)</span>}
                 </span>
                 <span className="bar-wrap">
                   <span
@@ -289,7 +289,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
       </section>
 
       <footer className="fine foot">
-        made for hayloft 711. stuff from before this site existed was pulled from the gc. cookies only remember who u are
+        made for hayloft 711. stuff from before this site existed was pulled from the gc. cookies only remember who you are
       </footer>
 
       {bursts.map((b) => (

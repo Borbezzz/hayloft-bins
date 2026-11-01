@@ -38,7 +38,7 @@ export default function ColorPicker({ who }: { who: string }) {
     return (
       <button className="color-toggle" onClick={() => setOpen(true)}>
         <span className="swatch" style={{ background: mine !== undefined ? hueColor(mine) : undefined }} />
-        {mine === undefined ? "ur grey rn. pick a colour" : "change ur colour"}
+        {mine === undefined ? "you're grey rn. pick a colour" : "change your colour"}
       </button>
     );
 
@@ -78,7 +78,7 @@ export default function ColorPicker({ who }: { who: string }) {
       </div>
       <div className="picker-foot">
         <span className={`small ${hit ? "clash" : "muted"}`}>
-          {msg ?? (hit ? `too close to ${lower(hit)}'s colour` : unchanged ? "that's ur colour already" : "looks free")}
+          {msg ?? (hit ? `too close to ${lower(hit)}'s colour` : unchanged ? "that's your colour already" : "looks free")}
         </span>
         <span className="picker-btns">
           {mine !== undefined && (

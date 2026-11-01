@@ -25,7 +25,7 @@ export default function Gate() {
         </button>
       </form>
       <p className={`error ${error ? "show" : ""}`} role="alert">{error ?? " "}</p>
-      <p className="fine">hint: it's what ur supposed to be taking out</p>
+      <p className="fine">hint: it's what you're supposed to be taking out</p>
     </main>
   );
 }
