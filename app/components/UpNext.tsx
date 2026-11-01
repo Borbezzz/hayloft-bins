@@ -14,10 +14,9 @@ const tex = (src: string) => katex.renderToString(src, { displayMode: true, thro
 
 const FORMULA = tex(String.raw`
 \begin{aligned}
-\mathcal{P}_i(t) &= \left\lfloor \left(\int_0^1 x\,\mathrm{d}x\right)\Big(\Phi_i(t) + \big|\,\Phi_i(t)\,\big|\Big) + \frac{1}{2} \right\rfloor \\[6pt]
-\Phi_i(t) &= \left.\frac{\mathrm{d}}{\mathrm{d}x}\,6x^2\,\right|_{x=1}\left(\frac{1}{|\mathcal{F}|}\sum_{j \in \mathcal{F}}\,\sum_{k=1}^{|\mathcal{L}_j|}\beta_{j,k} \;-\; \sum_{k=1}^{|\mathcal{L}_i|}\beta_{i,k}\right) \\[4pt]
-&\quad + \left(\sum_{n=0}^{\infty} 3^{-n}\right)\int_{\tau_i}^{\,t}\mathbf{1}\!\left[\,s-\tau_i < 30\,\mathrm{d}\,\right]\mathrm{d}s \\[4pt]
-&\quad + \binom{5}{2}\sum_{p \in \mathcal{P}}\Big[\,p_{\mathrm{to}} = i \;\wedge\; t_p > \tau_i\,\Big]
+\mathcal{P}_i(t) &= \left\lfloor \left(\int_0^2 2x\,\mathrm{d}x\right)\Delta_i(t)\,\rho_i \;+\; \binom{5}{2}\sum_{p \in \mathcal{P}}\Big[\,p_{\mathrm{to}} = i \;\wedge\; t_p > \tau_i\,\Big] + \frac{1}{2} \right\rfloor \\[8pt]
+\Delta_i(t) &= \int_{\tau_i}^{\,t}\mathbf{1}\!\left[\,s-\tau_i < 30\,\mathrm{d}\,\right]\mathrm{d}s \\[6pt]
+\rho_i &= \left(\lim_{n\to\infty}\frac{n+1}{n}\right)^{-1}\cdot\frac{\displaystyle e^{\,i\pi} + 2 + \frac{1}{|\mathcal{F}|}\sum_{j \in \mathcal{F}}\,\sum_{k=1}^{|\mathcal{L}_j|}\beta_{j,k}}{\displaystyle \sin^2\theta + \cos^2\theta + \sum_{k=1}^{|\mathcal{L}_i|}\beta_{i,k}}
 \end{aligned}
 `);
 
@@ -30,9 +29,10 @@ const WHERE = tex(String.raw`
 
 /*
   bin pressure (psi), higher = should go next
-  - 12 per bin below the flat average (or -12 per bin above it)
-  - 1.5 per day since their last bin run (never = since move-in), capped at 30 days
-  - 10 per ping since their last run
+  - days since their last bin run (never = since move-in), capped at 30
+  - times (flat average + 1) / (their bins + 1): behind = bigger, ahead = smaller
+  - times 4 so the numbers feel chunkier
+  - plus 10 per ping since their last run
 */
 export function computePressure(logs: BinLog[], pings: Ping[], now: number) {
   const pts = new Map<string, number>(PEOPLE.map((p) => [p, 0]));
@@ -47,7 +47,7 @@ export function computePressure(logs: BinLog[], pings: Ping[], now: number) {
     const lastTs = last.get(name);
     const days = Math.min(30, (now - (lastTs ?? MOVE_IN)) / DAY);
     const myPings = pings.filter((p) => p.to === name && p.ts > (lastTs ?? 0));
-    const score = Math.max(0, Math.round((avg - points) * 12 + days * 1.5 + myPings.length * 10));
+    const score = Math.round(4 * days * ((avg + 1) / (points + 1)) + 10 * myPings.length);
     return { name: name as string, points, lastTs, days, pings: myPings, score };
   }).sort((a, b) => b.score - a.score || a.points - b.points);
 }
@@ -67,14 +67,13 @@ function workedExample(rows: ReturnType<typeof computePressure>, who: string) {
   const total = rows.reduce((acc, x) => acc + x.points, 0);
   const avg = total / rows.length;
   const f = (x: number) => (Math.round(x * 100) / 100).toString();
-  const a = 12 * (avg - r.points), b = 1.5 * r.days, c = 10 * r.pings.length;
-  const phi = a + b + c;
+  const rho = (avg + 1) / (r.points + 1);
+  const raw = 4 * r.days * rho + 10 * r.pings.length;
   const name = String.raw`\text{${who.toLowerCase()}}`;
   return tex(String.raw`
 \begin{aligned}
-\Phi_{${name}} &= 12\left(\tfrac{${total}}{${rows.length}} - ${r.points}\right) + \tfrac{3}{2}\cdot ${f(r.days)} + 10 \cdot ${r.pings.length} \\
-&= ${f(a)} + ${f(b)} + ${c} = ${f(phi)} \\[4pt]
-\mathcal{P}_{${name}} &= \left\lfloor \tfrac{1}{2}\big(${f(phi)} + ${f(Math.abs(phi))}\big) + \tfrac{1}{2} \right\rfloor = \boxed{${Math.max(0, Math.round(phi))}\ \text{psi}}
+\Delta_{${name}} &= ${f(r.days)}\ \text{days}, \qquad \rho_{${name}} = \frac{${f(avg)} + 1}{${r.points} + 1} = ${f(rho)} \\[6pt]
+\mathcal{P}_{${name}} &= \left\lfloor 4 \cdot ${f(r.days)} \cdot ${f(rho)} + 10 \cdot ${r.pings.length} + \tfrac{1}{2} \right\rfloor = \left\lfloor ${f(raw + 0.5)} \right\rfloor = \boxed{${r.score}\ \text{psi}}
 \end{aligned}
 `);
 }
@@ -159,16 +158,17 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
       <div className="how">
         <h3>how the score works</h3>
         <ul>
-          <li><strong>+12 psi</strong> for every bin you're below the flat average (and -12 for every bin above it)</li>
-          <li><strong>+1.5 psi</strong> for every day since you last took the bins down, maxes out at 30 days. never gone = counted from move-in</li>
-          <li><strong>+10 psi</strong> for every ping since your last bin run. take the bins down and your pings reset</li>
+          <li>it starts with <strong>days since you last took the bins down</strong>, maxes out at 30. never gone = counted from move-in. so everyone&apos;s pressure keeps building until they go</li>
+          <li>that gets <strong>multiplied by how behind you are</strong>: (flat average + 1) ÷ (your bins + 1). below average makes it grow faster, above average slows it down</li>
+          <li><strong>×4</strong> so the numbers feel scarier</li>
+          <li><strong>+10 psi</strong> for every ping since your last bin run. take the bins down and it all resets to 0</li>
           <li>you can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping yourself</li>
         </ul>
         <details className="formula">
           <summary>curious how the score is actually calculated?</summary>
           <div className="tex" dangerouslySetInnerHTML={{ __html: FORMULA }} />
           <div className="tex small-tex" dangerouslySetInnerHTML={{ __html: WHERE }} />
-          <p className="fine">it&apos;s the same thing as the list above, every weird constant works out to 12, 1.5 and 10. here it is with your actual numbers rn:</p>
+          <p className="fine">it&apos;s the same thing as the list above, every weird bit works out to 4, 10, 1 and 1. here it is with your actual numbers rn:</p>
           <div className="tex worked" dangerouslySetInnerHTML={{ __html: example }} />
         </details>
       </div>
