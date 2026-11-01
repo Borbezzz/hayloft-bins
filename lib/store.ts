@@ -9,7 +9,7 @@ const SEEDED_KEY = "hayloft711:seeded";
 const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
 const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 
-const redis = url && token ? new Redis({ url, token }) : null;
+const redis = url && token ? new Redis({ url, token, cache: "no-store" }) : null;
 
 // Local dev fallback when no Redis env vars are set. Resets on restart.
 const g = globalThis as unknown as { __binMem?: Map<string, BinLog> };

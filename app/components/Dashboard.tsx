@@ -314,6 +314,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
             {showAll ? "show less" : `show all ${entries.length}`}
           </button>
         )}
+        <p className="fine synced">last synced {timeFmt.format(now)} · {logs.length} logs</p>
       </section>
 
 

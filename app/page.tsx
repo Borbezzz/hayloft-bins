@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { PASS_COOKIE, WHO_COOKIE, passToken } from "@/lib/auth";
 import { isPerson } from "@/lib/people";
 import { getColors, getLogs, getPings } from "@/lib/store";
@@ -16,6 +17,7 @@ export default function Home() {
 }
 
 async function Inner() {
+  await connection(); // always render per request, never from a cache
   const c = await cookies();
   if (c.get(PASS_COOKIE)?.value !== passToken()) return <Gate />;
 
