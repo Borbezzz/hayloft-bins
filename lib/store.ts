@@ -1,8 +1,9 @@
 import "server-only";
 import { Redis } from "@upstash/redis";
-import { SEED_LOGS, type BinLog } from "./people";
+import { SEED_LOGS, type BinLog, type Person } from "./people";
 
 const LOGS_KEY = "hayloft711:logs";
+const LEGACY: Record<string, Person> = { Saya: "sv.xaya" };
 const SEEDED_KEY = "hayloft711:seeded";
 
 const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
@@ -36,6 +37,14 @@ export async function getLogs(): Promise<BinLog[]> {
     logs = Object.values(all).map((v) =>
       typeof v === "string" ? (JSON.parse(v) as BinLog) : (v as BinLog),
     );
+    // one-off fix for logs stored under an old name (e.g. "Saya" -> "sv.xaya")
+    const renamed = logs.filter((l) => LEGACY[l.name as string]);
+    if (renamed.length) {
+      for (const l of renamed) l.name = LEGACY[l.name as string];
+      const fixed: Record<string, string> = {};
+      for (const l of renamed) fixed[l.id] = JSON.stringify(l);
+      await redis.hset(LOGS_KEY, fixed);
+    }
   }
   return logs.sort((a, b) => b.ts - a.ts);
 }
