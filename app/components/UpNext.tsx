@@ -13,17 +13,14 @@ const MOVE_IN = Date.UTC(2026, 8, 21);
 const tex = (src: string) => katex.renderToString(src, { displayMode: true, throwOnError: false, output: "html" });
 
 const FORMULA = tex(String.raw`
-\begin{aligned}
-\mathcal{P}_i(t) &= \left\lfloor \left(\int_0^2 2x\,\mathrm{d}x\right)\Delta_i(t)\,\rho_i \;+\; \binom{5}{2}\sum_{p \in \mathcal{P}}\Big[\,p_{\mathrm{to}} = i \;\wedge\; t_p > \tau_i\,\Big] + \frac{1}{2} \right\rfloor \\[8pt]
-\Delta_i(t) &= \int_{\tau_i}^{\,t}\mathbf{1}\!\left[\,s-\tau_i < 30\,\mathrm{d}\,\right]\mathrm{d}s \\[6pt]
-\rho_i &= \left(\lim_{n\to\infty}\frac{n+1}{n}\right)^{-1}\cdot\frac{\displaystyle e^{\,i\pi} + 2 + \frac{1}{|\mathcal{F}|}\sum_{j \in \mathcal{F}}\,\sum_{k=1}^{|\mathcal{L}_j|}\beta_{j,k}}{\displaystyle \sin^2\theta + \cos^2\theta + \sum_{k=1}^{|\mathcal{L}_i|}\beta_{i,k}}
-\end{aligned}
+\text{psi}_i = \operatorname{round}\!\left(4 \cdot \min(d_i,\,30) \cdot \frac{\bar{b} + 1}{b_i + 1} \;+\; 10\,n_i\right)
 `);
 
 const WHERE = tex(String.raw`
 \begin{aligned}
-\tau_i &= \max\!\Big(\{\,t_{i,k}\,\}_{k=1}^{|\mathcal{L}_i|} \cup \{t_0\}\Big), \qquad \beta_{j,k} \in \{1, 2\} \\[4pt]
-1 &\ge \sum_{p \in \mathcal{P}} \Big[\,p_{\mathrm{from}} = j \,\wedge\, p_{\mathrm{to}} = i \,\wedge\, t - t_p < 7\,\mathrm{d}\,\Big] \quad \forall\, j \ne i
+d_i &= \text{days since } i\text{'s last bin run (or since move-in)} \\
+b_i &= \text{bins } i \text{ has taken down}, \qquad \bar{b} = \text{flat average} \\
+n_i &= \text{pings } i \text{ got since their last run}
 \end{aligned}
 `);
 
@@ -72,8 +69,8 @@ function workedExample(rows: ReturnType<typeof computePressure>, who: string) {
   const name = String.raw`\text{${who.toLowerCase()}}`;
   return tex(String.raw`
 \begin{aligned}
-\Delta_{${name}} &= ${f(r.days)}\ \text{days}, \qquad \rho_{${name}} = \frac{${f(avg)} + 1}{${r.points} + 1} = ${f(rho)} \\[6pt]
-\mathcal{P}_{${name}} &= \left\lfloor 4 \cdot ${f(r.days)} \cdot ${f(rho)} + 10 \cdot ${r.pings.length} + \tfrac{1}{2} \right\rfloor = \left\lfloor ${f(raw + 0.5)} \right\rfloor = \boxed{${r.score}\ \text{psi}}
+\frac{\bar{b} + 1}{b_{${name}} + 1} &= \frac{${f(avg)} + 1}{${r.points} + 1} = ${f(rho)} \\[6pt]
+\text{psi}_{${name}} &= \operatorname{round}\!\left(4 \cdot ${f(Math.min(r.days, 30))} \cdot ${f(rho)} + 10 \cdot ${r.pings.length}\right) = \operatorname{round}(${f(raw)}) = \boxed{${r.score}\ \text{psi}}
 \end{aligned}
 `);
 }
@@ -165,10 +162,10 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
           <li>you can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping yourself</li>
         </ul>
         <details className="formula">
-          <summary>curious how the score is actually calculated?</summary>
+          <summary>the formula</summary>
           <div className="tex" dangerouslySetInnerHTML={{ __html: FORMULA }} />
           <div className="tex small-tex" dangerouslySetInnerHTML={{ __html: WHERE }} />
-          <p className="fine">it&apos;s the same thing as the list above, every weird bit works out to 4, 10, 1 and 1. here it is with your actual numbers rn:</p>
+          <p className="fine">with your numbers right now:</p>
           <div className="tex worked" dangerouslySetInnerHTML={{ __html: example }} />
         </details>
       </div>
