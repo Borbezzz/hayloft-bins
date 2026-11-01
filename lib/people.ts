@@ -51,7 +51,7 @@ export const SEED_LOGS: BinLog[] = seed.map(([iso, name, bins], i) => ({
 }));
 
 // colours: everyone picks a hue, grey until they do
-export const MIN_HUE_GAP = 30;
+export const MIN_HUE_GAP = 15;
 export const GREY = "oklch(0.72 0.012 270)";
 export type Colors = Partial<Record<Person, number>>;
 

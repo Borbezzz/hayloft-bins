@@ -46,13 +46,7 @@ export default function ColorPicker({ who }: { who: string }) {
     <div className="picker">
       <div className="picker-head">
         <span className="swatch big-swatch" style={{ background: hueColor(hue) }} />
-        <div>
-          <strong>pick ur colour</strong>
-          <p className="muted small">
-            {mine === undefined ? "everyone's grey until they pick one. " : ""}
-            no copying, it has to be a bit different from everyone else&apos;s
-          </p>
-        </div>
+        <p>pick a color, it has to be a bit different from everyone else&apos;s</p>
       </div>
       <div className="hue-wrap">
         <input

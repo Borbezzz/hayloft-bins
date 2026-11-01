@@ -8,7 +8,7 @@ import type { Ping } from "@/lib/store";
 import UpNext from "./UpNext";
 import Presence from "./Presence";
 import Heatmap from "./Heatmap";
-import { LastSeen, Stats, Timeline, Waffle, Weekly, When } from "./Charts";
+import { LastSeen, Share, Stats, Timeline, Weekly, When } from "./Charts";
 import ColorPicker from "./ColorPicker";
 import { ColorsProvider, useCol } from "./colors";
 
@@ -250,7 +250,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
       </section>
 
       <Stats logs={logs} now={now} />
-      <Waffle board={board} total={total} />
+      <Share board={board} total={total} />
       <Weekly logs={logs} now={now} />
       <Timeline logs={logs} now={now} board={board} />
       <When logs={logs} />

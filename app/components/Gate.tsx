@@ -9,7 +9,6 @@ export default function Gate() {
     <main className="shell narrow">
       <p className="kicker">hayloft 711</p>
       <h1 className="title">bin tracker</h1>
-      <p className="lede">the receipts for who's actually taking the bins down. flat only, so password pls</p>
       <form action={action} className="gate">
         <label htmlFor="pw" className="sr-only">password</label>
         <input
@@ -26,7 +25,7 @@ export default function Gate() {
         </button>
       </form>
       <p className={`error ${error ? "show" : ""}`} role="alert">{error ?? " "}</p>
-      <p className="fine">hint: it's literally what ur supposed to be taking out</p>
+      <p className="fine">hint: it's what ur supposed to be taking out</p>
     </main>
   );
 }

@@ -41,29 +41,34 @@ export function Stats({ logs, now }: { logs: BinLog[]; now: number }) {
   );
 }
 
-/* ---------- waffle: one square per bin ---------- */
-export function Waffle({ board, total }: { board: Board; total: number }) {
+/* ---------- share of bins ---------- */
+export function Share({ board, total }: { board: Board; total: number }) {
   const colorOf = useCol();
-  const squares = board.flatMap((b) => Array.from({ length: b.points }, () => b.name));
-  const top = board[0];
+  const nonZero = board.filter((b) => b.points > 0);
   return (
     <section className="reveal">
       <h2 className="h2">who&apos;s carrying the flat</h2>
-      <p className="sub">
-        every square is one bin bag. {top && top.points > 0 ? `${lower(top.name)} alone did ${Math.round((top.points / Math.max(1, total)) * 100)}% of them` : ""}
-      </p>
-      <div className="waffle">
-        {squares.map((n, i) => (
-          <span key={i} className="sq" style={{ background: colorOf(n), animationDelay: `${i * 35}ms` }} title={lower(n)}>
-            {n[0]}
-          </span>
+      <div className="share">
+        {nonZero.map((b, i) => (
+          <span
+            key={b.name}
+            className="seg"
+            style={{ flexGrow: b.points, background: colorOf(b.name), animationDelay: `${i * 70}ms` }}
+            title={`${lower(b.name)}: ${b.points}`}
+          />
         ))}
       </div>
       <ul className="share-legend">
-        {board.map((b) => (
-          <li key={b.name} className={b.points === 0 ? "zero" : ""}>
-            <span className={`dot ${b.points === 0 ? "hollow" : ""}`} style={b.points ? { background: colorOf(b.name) } : undefined} />
+        {nonZero.map((b) => (
+          <li key={b.name}>
+            <span className="dot" style={{ background: colorOf(b.name) }} />
             {lower(b.name)} <span className="muted">{Math.round((b.points / Math.max(1, total)) * 100)}%</span>
+          </li>
+        ))}
+        {board.filter((b) => b.points === 0).map((b) => (
+          <li key={b.name} className="zero">
+            <span className="dot hollow" />
+            {lower(b.name)} <span>0%</span>
           </li>
         ))}
       </ul>
@@ -236,22 +241,10 @@ export function LastSeen({ logs, now }: { logs: BinLog[]; now: number }) {
     return { name: p as string, ago: last ? Math.floor((now - last.ts) / DAY) : Infinity };
   }).sort((a, b) => b.ago - a.ago);
 
-  const buddies = useMemo(() => {
-    const m = new Map<string, number>();
-    const sorted = logs.slice().sort((a, b) => a.ts - b.ts);
-    for (let i = 0; i < sorted.length; i++)
-      for (let j = i + 1; j < sorted.length && sorted[j].ts - sorted[i].ts < 20 * 60_000; j++) {
-        if (sorted[i].name === sorted[j].name) continue;
-        const k = [sorted[i].name, sorted[j].name].sort().join("|");
-        m.set(k, (m.get(k) ?? 0) + 1);
-      }
-    return [...m.entries()].sort((a, b) => b[1] - a[1]);
-  }, [logs]);
-
   const say = (d: number) => (d === Infinity ? "never. not once" : d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`);
 
   return (
-    <section className="reveal timing">
+    <section className="reveal">
       <div>
         <h2 className="h2">last seen at the bin room</h2>
         <p className="sub">longest gone at the top</p>
@@ -264,29 +257,6 @@ export function LastSeen({ logs, now }: { logs: BinLog[]; now: number }) {
             </li>
           ))}
         </ul>
-      </div>
-      <div>
-        <h2 className="h2">bin buddies</h2>
-        <p className="sub">who goes down to the bins together</p>
-        {buddies.length === 0 ? (
-          <p className="muted">nobody yet. everyone suffers alone</p>
-        ) : (
-          <ul className="buddies">
-            {buddies.map(([k, n]) => {
-              const [a, b] = k.split("|");
-              return (
-                <li key={k}>
-                  <span className="pair">
-                    <span className="face sm" style={{ background: colorOf(a) }}>{a[0]}</span>
-                    <span className="face sm" style={{ background: colorOf(b) }}>{b[0]}</span>
-                  </span>
-                  <span>{lower(a)} & {lower(b)}</span>
-                  <span className="mono muted">{n}x</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </div>
     </section>
   );

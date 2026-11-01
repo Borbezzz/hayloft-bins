@@ -14,10 +14,10 @@ const tex = (src: string) => katex.renderToString(src, { displayMode: true, thro
 
 const FORMULA = tex(String.raw`
 \begin{aligned}
-\mathcal{P}_i(t) &= \frac{1}{2}\Big(\Phi_i(t) + \big|\,\Phi_i(t)\,\big|\Big) \\[6pt]
-\Phi_i(t) &= 12\left(\frac{1}{|\mathcal{F}|}\sum_{j \in \mathcal{F}}\,\sum_{k=1}^{|\mathcal{L}_j|}\beta_{j,k} \;-\; \sum_{k=1}^{|\mathcal{L}_i|}\beta_{i,k}\right) \\[4pt]
-&\quad + \frac{3}{2}\int_{\tau_i}^{\,t}\mathbf{1}\!\left[\,s-\tau_i < 30\,\mathrm{d}\,\right]\mathrm{d}s \\[4pt]
-&\quad + 10\sum_{p \in \mathcal{P}}\Big[\,p_{\mathrm{to}} = i \;\wedge\; t_p > \tau_i\,\Big]
+\mathcal{P}_i(t) &= \left\lfloor \left(\int_0^1 x\,\mathrm{d}x\right)\Big(\Phi_i(t) + \big|\,\Phi_i(t)\,\big|\Big) + \frac{1}{2} \right\rfloor \\[6pt]
+\Phi_i(t) &= \left.\frac{\mathrm{d}}{\mathrm{d}x}\,6x^2\,\right|_{x=1}\left(\frac{1}{|\mathcal{F}|}\sum_{j \in \mathcal{F}}\,\sum_{k=1}^{|\mathcal{L}_j|}\beta_{j,k} \;-\; \sum_{k=1}^{|\mathcal{L}_i|}\beta_{i,k}\right) \\[4pt]
+&\quad + \left(\sum_{n=0}^{\infty} 3^{-n}\right)\int_{\tau_i}^{\,t}\mathbf{1}\!\left[\,s-\tau_i < 30\,\mathrm{d}\,\right]\mathrm{d}s \\[4pt]
+&\quad + \binom{5}{2}\sum_{p \in \mathcal{P}}\Big[\,p_{\mathrm{to}} = i \;\wedge\; t_p > \tau_i\,\Big]
 \end{aligned}
 `);
 
@@ -61,9 +61,28 @@ type Props = {
   onPing: (name: string) => void;
 };
 
+function workedExample(rows: ReturnType<typeof computePressure>, who: string) {
+  const r = rows.find((x) => x.name === who);
+  if (!r) return "";
+  const total = rows.reduce((acc, x) => acc + x.points, 0);
+  const avg = total / rows.length;
+  const f = (x: number) => (Math.round(x * 100) / 100).toString();
+  const a = 12 * (avg - r.points), b = 1.5 * r.days, c = 10 * r.pings.length;
+  const phi = a + b + c;
+  const name = String.raw`\text{${who.toLowerCase()}}`;
+  return tex(String.raw`
+\begin{aligned}
+\Phi_{${name}} &= 12\left(\tfrac{${total}}{${rows.length}} - ${r.points}\right) + \tfrac{3}{2}\cdot ${f(r.days)} + 10 \cdot ${r.pings.length} \\
+&= ${f(a)} + ${f(b)} + ${c} = ${f(phi)} \\[4pt]
+\mathcal{P}_{${name}} &= \left\lfloor \tfrac{1}{2}\big(${f(phi)} + ${f(Math.abs(phi))}\big) + \tfrac{1}{2} \right\rfloor = \boxed{${Math.max(0, Math.round(phi))}\ \text{psi}}
+\end{aligned}
+`);
+}
+
 export default function UpNext({ logs, pings, now, who, pending, onPing }: Props) {
   const colorOf = useCol();
   const rows = useMemo(() => computePressure(logs, pings, now), [logs, pings, now]);
+  const example = useMemo(() => workedExample(rows, who), [rows, who]);
   const max = Math.max(1, ...rows.map((r) => r.score));
   const top = rows[0];
   const iAmNext = top.name === who;
@@ -132,7 +151,8 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
           <summary>curious how the score is actually calculated?</summary>
           <div className="tex" dangerouslySetInnerHTML={{ __html: FORMULA }} />
           <div className="tex small-tex" dangerouslySetInnerHTML={{ __html: WHERE }} />
-          <p className="fine">it&apos;s the same thing as the list above. we just wanted it to look scary</p>
+          <p className="fine">it&apos;s the same thing as the list above, every weird constant works out to 12, 1.5 and 10. here it is with ur actual numbers rn:</p>
+          <div className="tex worked" dangerouslySetInnerHTML={{ __html: example }} />
         </details>
       </div>
     </section>
