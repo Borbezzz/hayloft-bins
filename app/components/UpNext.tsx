@@ -152,23 +152,23 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
           );
         })}
       </ol>
-      <div className="how">
-        <h3>how the score works</h3>
-        <ul>
-          <li>it starts with <strong>days since you last took the bins down</strong>, maxes out at 30. never gone = counted from move-in. so everyone&apos;s pressure keeps building until they go</li>
-          <li>that gets <strong>multiplied by how behind you are</strong>: (flat average + 1) ÷ (your bins + 1). below average makes it grow faster, above average slows it down</li>
-          <li><strong>×4</strong> so the numbers feel scarier</li>
-          <li><strong>+10 psi</strong> for every ping since your last bin run. take the bins down and it all resets to 0</li>
-          <li>you can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping yourself</li>
-        </ul>
-        <details className="formula">
-          <summary>the formula</summary>
+      <details className="how formula">
+        <summary>how the score works</summary>
+        <div className="how-body">
+          <ul>
+            <li>it starts with <strong>days since you last took the bins down</strong>, maxes out at 30. never gone = counted from move-in. so everyone&apos;s pressure keeps building until they go</li>
+            <li>that gets <strong>multiplied by how behind you are</strong>: (flat average + 1) ÷ (your bins + 1). below average makes it grow faster, above average slows it down</li>
+            <li><strong>×4</strong> so the numbers feel scarier</li>
+            <li><strong>+10 psi</strong> for every ping since your last bin run. take the bins down and it all resets to 0</li>
+            <li>you can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping yourself</li>
+          </ul>
+          <h3>the formula</h3>
           <div className="tex" dangerouslySetInnerHTML={{ __html: FORMULA }} />
           <div className="tex small-tex" dangerouslySetInnerHTML={{ __html: WHERE }} />
           <p className="fine">with your numbers right now:</p>
           <div className="tex worked" dangerouslySetInnerHTML={{ __html: example }} />
-        </details>
-      </div>
+        </div>
+      </details>
     </section>
   );
 }

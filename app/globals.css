@@ -464,8 +464,11 @@ button.cell2:not(:disabled):hover { transform: scale(1.25); position: relative; 
 .formula { margin-top: 18px; }
 .formula summary { cursor: pointer; font-size: 15px; font-weight: 650; color: var(--pop2); list-style: none; display: inline-flex; align-items: center; gap: 8px; }
 .formula summary::-webkit-details-marker { display: none; }
-.formula summary::before { content: "+"; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--pop2); color: oklch(0.22 0.08 350); font-weight: 800; transition: transform .25s var(--spring); }
-.formula[open] summary::before { transform: rotate(45deg); }
+.formula summary::before { content: "↓"; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--pop2); color: oklch(0.22 0.08 350); font-weight: 800; font-size: 13px; transition: transform .3s var(--spring); }
+.formula[open] summary::before { transform: rotate(180deg); }
+.how-body { margin-top: 14px; }
+.formula[open] .how-body { animation: rise .35s var(--ease) both; }
+.how-body h3 { margin-top: 22px; }
 .formula[open] .tex { animation: rise .4s var(--ease) both; }
 .tex { overflow-x: auto; overflow-y: hidden; padding: 8px 0; color: var(--ink); }
 .tex .katex-display { margin: .6em 0; }
