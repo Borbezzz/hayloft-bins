@@ -17,11 +17,11 @@ const dayKey = (ts: number) => keyFmt.format(ts); // YYYY-MM-DD in London
 const lower = (s: string) => s.toLowerCase();
 
 const ROASTS = [
-  "0 bins. ain't no way",
-  "has never seen the bin room on god",
+  "has never touched a bin bag",
+  "would need directions to the bin room",
   "thinks the bins take themselves down",
   "bin room? never heard of her",
-  "lowkey just vibing while the bins overflow",
+  "the bins have never met them",
 ];
 
 function roastFor(name: string) {
@@ -66,7 +66,7 @@ export default function Dashboard({ who, logs, now, undoWindowMs }: Props) {
       else
         setFlash({
           id: res.id,
-          text: bins === 2 ? "+2 logged. double bin W fr" : "+1 logged. lowkey a W",
+          text: bins === 2 ? "+2. the flat thanks u" : "+1. noted",
         });
     });
   }
@@ -90,14 +90,14 @@ export default function Dashboard({ who, logs, now, undoWindowMs }: Props) {
   return (
     <main className="shell">
       <header className="top">
-        <span className="kicker">hayloft 711 bins</span>
+        <span className="kicker">hayloft 711 bins · {lower(who)}</span>
         <button className="link" onClick={() => start(() => forgetName())}>
           not {lower(who)}? switch
         </button>
       </header>
 
       <section className="hero">
-        <h1 className="title">yo {lower(who)}, took the bins down?</h1>
+        <h1 className="title">did u take the bins down?</h1>
         <div className="big-btns">
           <button className="big" disabled={pending} onClick={() => doLog(1)}>
             <span className="num">1</span>
@@ -141,7 +141,7 @@ export default function Dashboard({ who, logs, now, undoWindowMs }: Props) {
             ))}{" "}
             {shame.length === 1 ? "has" : "have"} taken down <em>zero</em> bins.
             <br />
-            {total} bins have gone down without {shame.length === 1 ? "their" : "any of their"} help. on god
+            {total} bins have gone down so far. none of them were theirs.
           </p>
         </section>
       )}
@@ -285,7 +285,7 @@ function Heatmap({ logs, now }: { logs: BinLog[]; now: number }) {
           {selLogs.length === 0
             ? sel === todayKey
               ? "nothing yet today. just saying"
-              : "no bins. tumbleweed"
+              : "nobody. the bins just sat there"
             : selLogs.map((l) => `${lower(l.name)} (${l.bins})`).join(", ")}
         </p>
         <span className="legend">
