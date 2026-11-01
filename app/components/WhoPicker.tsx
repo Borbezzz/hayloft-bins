@@ -23,10 +23,6 @@ export default function WhoPicker() {
           </button>
         ))}
       </div>
-      <p className="fine">
-        cookies: we save ur name in a cookie so the site knows who u are next time. that's it, no
-        tracking, no ads, nothing weird
-      </p>
       <p className="fine">pls don't log as someone else. we will find out</p>
     </main>
   );

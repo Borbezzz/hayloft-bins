@@ -223,7 +223,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
           {board.map((b, i) => {
             const rank = board.filter((x) => x.points > b.points).length + 1;
             const note =
-              b.points === 0 ? roastFor(b.name) : rank === 1 ? "bin lord 👑" : b.points === lowestNonZero ? "doing the bare minimum" : "";
+              b.points === 0 ? roastFor(b.name) : b.points === lowestNonZero ? "doing the bare minimum" : "";
             return (
               <li key={b.name} className={`row ${b.points === 0 ? "zero" : ""} ${b.name === who ? "me" : ""}`}>
                 <span className="rank">{rank}</span>
