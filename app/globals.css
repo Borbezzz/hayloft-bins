@@ -487,3 +487,4 @@ button.cell2:not(:disabled):hover { transform: scale(1.25); position: relative; 
 .log li.ping-row .what { color: var(--muted); }
 .log li.ping-row .what strong { color: var(--ink); }
 .log li.ping-row .tag { color: var(--pop2); font-weight: 700; }
+.with { margin-left: 6px; font-size: 12px; font-weight: 650; color: var(--pop2); }

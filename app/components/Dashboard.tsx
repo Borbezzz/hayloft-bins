@@ -6,6 +6,7 @@ import { DAY, dateFmt, lower, timeFmt } from "@/lib/time";
 import { forgetName, logBins, pingPerson, removeLog, restoreLog } from "../actions";
 import type { Ping } from "@/lib/store";
 import UpNext from "./UpNext";
+import { TOGETHER_WINDOW, pairUp } from "@/lib/runs";
 import Presence from "./Presence";
 import Heatmap from "./Heatmap";
 import { LastSeen, Share, Stats, Timeline, Weekly, When } from "./Charts";
@@ -90,7 +91,14 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
     start(async () => {
       const r = await logBins(bins);
       if (!r.ok) return say(r.error);
-      say(`${bins === 2 ? "+2. the flat thanks you" : "+1. noted"} · today ${timeFmt.format(r.log.ts)}`, () => undoAdd(r.log));
+      const buddy =
+        bins === 1 && logs.find((l) => l.bins === 1 && l.name !== who && Math.abs(l.ts - r.log.ts) <= TOGETHER_WINDOW);
+      const msg = buddy
+        ? `+1. with ${lower(buddy.name)} that's a double haul`
+        : bins === 2
+          ? "+2. the flat thanks you"
+          : "+1. noted";
+      say(`${msg} · today ${timeFmt.format(r.log.ts)}`, () => undoAdd(r.log));
     });
   }
 
@@ -161,6 +169,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
     ...pings.map((p) => ({ kind: "ping" as const, ts: p.ts, ping: p })),
   ].sort((a, b) => b.ts - a.ts);
   const receipts = showAll ? entries : entries.slice(0, 8);
+  const partners = pairUp(logs);
 
   return (
     <main className="shell">
@@ -274,6 +283,7 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
                 <span className="what">
                   <span className="dot" style={{ background: colorOf(e.log.name) }} />
                   <strong>{lower(e.log.name)}</strong> took {e.log.bins} {e.log.bins === 1 ? "bin" : "bins"}
+                  {partners.get(e.log.id) && <span className="with">with {lower(partners.get(e.log.id)!.name)}</span>}
                 </span>
                 <span className="tag">
                   {e.log.name === who ? (

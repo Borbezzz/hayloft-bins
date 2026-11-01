@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { BinLog } from "@/lib/people";
 import { DAY, dayKey, keyToUtc, londonToUtc, lower, timeFmt, utcDateFmt } from "@/lib/time";
 import { useCol } from "./colors";
+import { pairUp } from "@/lib/runs";
 
 type Props = {
   logs: BinLog[];
@@ -64,6 +65,7 @@ export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Pr
   }, [startIdx]);
 
   const selLogs = (byDay.get(sel) ?? []).slice().sort((a, b) => a.ts - b.ts);
+  const partners = useMemo(() => pairUp(logs), [logs]);
   const selTotal = selLogs.reduce((s, l) => s + l.bins, 0);
   const isToday = sel === todayKey;
 
@@ -150,6 +152,7 @@ export default function Heatmap({ logs, now, who, pending, onAdd, onRemove }: Pr
                 <span className="dot" style={{ background: colorOf(l.name) }} />
                 <span>
                   <strong>{lower(l.name)}</strong> took {l.bins} {l.bins === 1 ? "bin" : "bins"}
+                  {partners.get(l.id) && <span className="with"> with {lower(partners.get(l.id)!.name)}</span>}
                 </span>
                 <span className="mono muted small">{timeFmt.format(l.ts)}</span>
                 {l.name === who ? (

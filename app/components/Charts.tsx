@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { PEOPLE, type BinLog } from "@/lib/people";
 import { DAY, dateFmt, dayKey, keyToUtc, londonParts, lower } from "@/lib/time";
 import { useCol } from "./colors";
+import { toRuns } from "@/lib/runs";
 
 type Board = { name: string; points: number }[];
 const MOVE_IN = Date.UTC(2026, 8, 21); // mon 21 sep 2026
@@ -18,16 +19,19 @@ export function Stats({ logs, now }: { logs: BinLog[]; now: number }) {
   const s = useMemo(() => {
     const total = logs.reduce((a, l) => a + l.bins, 0);
     const weeks = Math.max(1, (now - MOVE_IN) / (7 * DAY));
-    const runs = [...new Set(logs.map((l) => Math.round(l.ts / 900_000)))].map((t) => t * 900_000).sort((a, b) => a - b);
+    const runList = toRuns(logs);
+    const runs = runList.map((r) => r.ts);
     let drought = 0;
     for (let i = 1; i < runs.length; i++) drought = Math.max(drought, runs[i] - runs[i - 1]);
     if (runs.length) drought = Math.max(drought, now - runs[runs.length - 1]);
-    const doubles = logs.filter((l) => l.bins === 2).length;
+    const doubles = runList.filter((r) => r.bins === 2).length;
+    const together = runList.filter((r) => r.people.length === 2).length;
     return {
       total,
       perWeek: total / weeks,
       drought: Math.round(drought / DAY),
-      doubleRate: logs.length ? Math.round((doubles / logs.length) * 100) : 0,
+      doubleRate: runList.length ? Math.round((doubles / runList.length) * 100) : 0,
+      together,
     };
   }, [logs, now]);
 
@@ -36,7 +40,7 @@ export function Stats({ logs, now }: { logs: BinLog[]; now: number }) {
       <div><span className="big-num">{s.total}</span><span className="lbl">bins down total</span></div>
       <div><span className="big-num">{s.perWeek.toFixed(1)}</span><span className="lbl">bins a week (should be like 4)</span></div>
       <div><span className="big-num">{s.drought}d</span><span className="lbl">longest bin drought</span></div>
-      <div><span className="big-num">{s.doubleRate}%</span><span className="lbl">of runs were double hauls</span></div>
+      <div><span className="big-num">{s.doubleRate}%</span><span className="lbl">of runs were double hauls ({s.together} done as a pair)</span></div>
     </section>
   );
 }
