@@ -304,14 +304,18 @@ button.cell:not(:disabled):hover { transform: scale(1.3); z-index: 1; }
 .picker-head p { margin-top: 2px; }
 .hue-wrap { position: relative; margin: 22px 0 14px; height: 30px; }
 .hue {
-  -webkit-appearance: none; appearance: none; width: 100%; height: 30px; border-radius: 999px; outline: none; position: relative; z-index: 2;
+  -webkit-appearance: none; appearance: none; width: 100%; height: 30px; border-radius: 999px; outline: none; position: relative; z-index: 4; background: transparent; display: block;
+}
+.hue-wrap::before {
+  content: ""; position: absolute; inset: 0; border-radius: 999px; z-index: 1;
   background: linear-gradient(90deg, oklch(0.72 0.17 0), oklch(0.72 0.17 60), oklch(0.72 0.17 120), oklch(0.72 0.17 180), oklch(0.72 0.17 240), oklch(0.72 0.17 300), oklch(0.72 0.17 359));
 }
 .hue::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 34px; border-radius: 50%; background: var(--thumb); border: 4px solid var(--bg); box-shadow: 0 2px 10px oklch(0 0 0 / .3); cursor: grab; transition: transform .2s var(--spring); }
 .hue::-webkit-slider-thumb:active { transform: scale(1.15); cursor: grabbing; }
 .hue::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--thumb); border: 4px solid var(--bg); box-shadow: 0 2px 10px oklch(0 0 0 / .3); }
-.taken { position: absolute; top: 0; height: 30px; z-index: 3; pointer-events: none; background: repeating-linear-gradient(45deg, oklch(0 0 0 / .28) 0 4px, transparent 4px 8px); border-radius: 8px; }
-.taken i { position: absolute; left: 50%; top: -24px; translate: -50% 0; width: 20px; height: 20px; border-radius: 50%; font-style: normal; font-size: 10px; font-weight: 700; display: grid; place-items: center; color: oklch(0.2 0.03 270); box-shadow: 0 0 0 2px var(--bg); }
+.taken-clip { position: absolute; inset: 0; border-radius: 999px; overflow: hidden; z-index: 3; pointer-events: none; }
+.taken { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, oklch(0 0 0 / .3) 0 4px, transparent 4px 8px); }
+.taken-face { position: absolute; top: -26px; translate: -50% 0; width: 20px; height: 20px; border-radius: 50%; font-style: normal; font-size: 10px; font-weight: 700; display: grid; place-items: center; color: oklch(0.2 0.03 270); box-shadow: 0 0 0 2px var(--bg); pointer-events: none; }
 .picker-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .picker-btns { display: inline-flex; gap: 14px; align-items: center; }
 .clash { color: var(--shame); font-weight: 600; }

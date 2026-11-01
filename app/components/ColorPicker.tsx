@@ -62,18 +62,22 @@ export default function ColorPicker({ who }: { who: string }) {
           aria-label="colour"
           style={{ ["--thumb" as string]: hueColor(hue) }}
         />
+        <span className="taken-clip" aria-hidden>
+          {taken.flatMap((t) => {
+            // band of hues too close to someone, wrapping around the ends of the slider
+            const lo = t.h - MIN_HUE_GAP, hi = t.h + MIN_HUE_GAP;
+            const segs: [number, number][] = [[Math.max(0, lo), Math.min(359, hi)]];
+            if (lo < 0) segs.push([360 + lo, 359]);
+            if (hi > 359) segs.push([0, hi - 360]);
+            return segs.map(([x, y], i) => (
+              <span key={`${t.name}${i}`} className="taken" style={{ left: `${(x / 359) * 100}%`, width: `${((y - x) / 359) * 100}%` }} />
+            ));
+          })}
+        </span>
         {taken.map((t) => (
-          <span
-            key={t.name}
-            className="taken"
-            style={{
-              left: `${((t.h - MIN_HUE_GAP) / 359) * 100}%`,
-              width: `${((MIN_HUE_GAP * 2) / 359) * 100}%`,
-            }}
-            title={`${lower(t.name)}'s colour`}
-          >
-            <i style={{ background: hueColor(t.h) }}>{t.name[0]}</i>
-          </span>
+          <i key={t.name} className="taken-face" style={{ left: `${(t.h / 359) * 100}%`, background: hueColor(t.h) }} title={`${lower(t.name)}'s colour`}>
+            {t.name[0]}
+          </i>
         ))}
       </div>
       <div className="picker-foot">
