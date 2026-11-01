@@ -100,7 +100,7 @@ export async function setMyColor(hue: number): Promise<{ ok: true } | { ok: fals
   return { ok: true };
 }
 
-const PING_COOLDOWN = 6 * 60 * 60 * 1000;
+const PING_COOLDOWN = 7 * 24 * 60 * 60 * 1000; // one ping per person per week
 
 export async function pingPerson(to: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const who = await me();
@@ -110,8 +110,8 @@ export async function pingPerson(to: string): Promise<{ ok: true } | { ok: false
   const pings = await getPings();
   const recent = pings.find((p) => p.from === who && p.to === to && Date.now() - p.ts < PING_COOLDOWN);
   if (recent) {
-    const h = Math.ceil((PING_COOLDOWN - (Date.now() - recent.ts)) / 3_600_000);
-    return { ok: false, error: `u already pinged ${to.toLowerCase()}. chill for ${h}h` };
+    const d = Math.ceil((PING_COOLDOWN - (Date.now() - recent.ts)) / 86_400_000);
+    return { ok: false, error: `u already pinged ${to.toLowerCase()} this week. try again in ${d}d` };
   }
   await addPing({ id: randomUUID(), from: who, to, ts: Date.now() });
   revalidatePath("/");

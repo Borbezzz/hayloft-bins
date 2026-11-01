@@ -173,14 +173,17 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
         <h1 className="title">
           did u take the <span className="hl">bins</span> down?
         </h1>
+        <p className="log-label">
+          <span className="arrow-down" aria-hidden>↓</span> took the bins down? log it here
+        </p>
         <div className="big-btns">
           <button className="big" disabled={pending} onClick={(e) => quickLog(1, e.currentTarget)}>
             <span className="num">1</span>
-            <span>bin</span>
+            <span className="unit">bin<small>tap to log</small></span>
           </button>
           <button className="big alt" disabled={pending} onClick={(e) => quickLog(2, e.currentTarget)}>
             <span className="num">2</span>
-            <span>bins</span>
+            <span className="unit">bins<small>tap to log</small></span>
           </button>
         </div>
         <p className="for-when">

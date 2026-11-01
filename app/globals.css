@@ -445,3 +445,33 @@ button.cell2:not(:disabled):hover { transform: scale(1.25); position: relative; 
   .pressure .psi { grid-column: 3; grid-row: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .gauge-fill { transform: none; } }
+
+/* hero log label */
+.log-label { margin-top: 28px; font-size: 15px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+.log-label + .big-btns { margin-top: 12px; }
+.arrow-down { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--bg); font-size: 13px; animation: nudge 1.6s var(--ease) infinite; }
+.big .unit { display: flex; flex-direction: column; line-height: 1.05; }
+.big .unit small { font-size: 12px; font-weight: 600; opacity: .65; }
+@keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+
+/* how the score works */
+.how { margin-top: 28px; }
+.how h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
+.how ul { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--muted); }
+.how li { padding-left: 16px; position: relative; }
+.how li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--pop2); }
+.how li strong { color: var(--ink); font-weight: 650; }
+.formula { margin-top: 18px; }
+.formula summary { cursor: pointer; font-size: 15px; font-weight: 650; color: var(--pop2); list-style: none; display: inline-flex; align-items: center; gap: 8px; }
+.formula summary::-webkit-details-marker { display: none; }
+.formula summary::before { content: "+"; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--pop2); color: oklch(0.22 0.08 350); font-weight: 800; transition: transform .25s var(--spring); }
+.formula[open] summary::before { transform: rotate(45deg); }
+.formula[open] .tex { animation: rise .4s var(--ease) both; }
+.tex { overflow-x: auto; overflow-y: hidden; padding: 8px 0; color: var(--ink); }
+.tex .katex-display { margin: .6em 0; }
+.tex .katex { font-size: 1.05em; }
+.small-tex .katex { font-size: .85em; }
+@media (max-width: 560px) {
+  .tex .katex { font-size: .82em; }
+  .small-tex .katex { font-size: .7em; }
+}

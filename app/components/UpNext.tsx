@@ -1,12 +1,32 @@
 "use client";
 
 import { useMemo } from "react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { PEOPLE, type BinLog } from "@/lib/people";
 import type { Ping } from "@/lib/store";
 import { DAY, lower } from "@/lib/time";
 import { useCol } from "./colors";
 
 const MOVE_IN = Date.UTC(2026, 8, 21);
+
+const tex = (src: string) => katex.renderToString(src, { displayMode: true, throwOnError: false, output: "html" });
+
+const FORMULA = tex(String.raw`
+\begin{aligned}
+\mathcal{P}_i(t) &= \frac{1}{2}\Big(\Phi_i(t) + \big|\,\Phi_i(t)\,\big|\Big) \\[6pt]
+\Phi_i(t) &= 12\left(\frac{1}{|\mathcal{F}|}\sum_{j \in \mathcal{F}}\,\sum_{k=1}^{|\mathcal{L}_j|}\beta_{j,k} \;-\; \sum_{k=1}^{|\mathcal{L}_i|}\beta_{i,k}\right) \\[4pt]
+&\quad + \frac{3}{2}\int_{\tau_i}^{\,t}\mathbf{1}\!\left[\,s-\tau_i < 30\,\mathrm{d}\,\right]\mathrm{d}s \\[4pt]
+&\quad + 10\sum_{p \in \mathcal{P}}\Big[\,p_{\mathrm{to}} = i \;\wedge\; t_p > \tau_i\,\Big]
+\end{aligned}
+`);
+
+const WHERE = tex(String.raw`
+\begin{aligned}
+\tau_i &= \max\!\Big(\{\,t_{i,k}\,\}_{k=1}^{|\mathcal{L}_i|} \cup \{t_0\}\Big), \qquad \beta_{j,k} \in \{1, 2\} \\[4pt]
+1 &\ge \sum_{p \in \mathcal{P}} \Big[\,p_{\mathrm{from}} = j \,\wedge\, p_{\mathrm{to}} = i \,\wedge\, t - t_p < 7\,\mathrm{d}\,\Big] \quad \forall\, j \ne i
+\end{aligned}
+`);
 
 /*
   bin pressure (psi), higher = should go next
@@ -71,7 +91,7 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
 
       <ol className="pressure">
         {rows.map((r, i) => {
-          const pingedByMe = r.pings.some((p) => p.from === who && now - p.ts < 6 * 3_600_000);
+          const pingedByMe = pings.some((p) => p.from === who && p.to === r.name && now - p.ts < 7 * DAY);
           return (
             <li key={r.name} className={r.name === who ? "me" : ""}>
               <span className="rank">{i + 1}</span>
@@ -100,9 +120,21 @@ export default function UpNext({ logs, pings, now, who, pending, onPing }: Props
           );
         })}
       </ol>
-      <p className="fine">
-        a ping adds 10 psi until they take the bins down. u can ping each person once every 6h. psi = bin pressure, obviously
-      </p>
+      <div className="how">
+        <h3>how the score works</h3>
+        <ul>
+          <li><strong>+12 psi</strong> for every bin ur below the flat average (and -12 for every bin above it)</li>
+          <li><strong>+1.5 psi</strong> for every day since u last took the bins down, maxes out at 30 days. never gone = counted from move-in</li>
+          <li><strong>+10 psi</strong> for every ping since ur last bin run. take the bins down and ur pings reset</li>
+          <li>u can ping each person <strong>once a week</strong>, so choose wisely. can&apos;t ping urself</li>
+        </ul>
+        <details className="formula">
+          <summary>curious how the score is actually calculated?</summary>
+          <div className="tex" dangerouslySetInnerHTML={{ __html: FORMULA }} />
+          <div className="tex small-tex" dangerouslySetInnerHTML={{ __html: WHERE }} />
+          <p className="fine">it&apos;s the same thing as the list above. we just wanted it to look scary</p>
+        </details>
+      </div>
     </section>
   );
 }
