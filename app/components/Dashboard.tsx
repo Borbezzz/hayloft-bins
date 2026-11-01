@@ -155,7 +155,12 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
         : `bins last went down ${ago(gap)}, by ${lower(last.name)}`;
   }
 
-  const receipts = showAll ? logs : logs.slice(0, 8);
+  type Entry = { kind: "log"; ts: number; log: BinLog } | { kind: "ping"; ts: number; ping: Ping };
+  const entries: Entry[] = [
+    ...logs.map((l) => ({ kind: "log" as const, ts: l.ts, log: l })),
+    ...pings.map((p) => ({ kind: "ping" as const, ts: p.ts, ping: p })),
+  ].sort((a, b) => b.ts - a.ts);
+  const receipts = showAll ? entries : entries.slice(0, 8);
 
   return (
     <main className="shell">
@@ -260,30 +265,43 @@ function Inner({ who, logs, now, pings }: Omit<Props, "colors">) {
       <section className="reveal">
         <h2 className="h2">the receipts</h2>
         <ul className="log">
-          {receipts.map((l) => (
-            <li key={l.id}>
-              <span className="when">
-                {lower(dateFmt.format(l.ts))} <span className="muted">{timeFmt.format(l.ts)}</span>
-              </span>
-              <span className="what">
-                <span className="dot" style={{ background: colorOf(l.name) }} />
-                <strong>{lower(l.name)}</strong> took {l.bins} {l.bins === 1 ? "bin" : "bins"}
-              </span>
-              <span className="tag">
-                {l.name === who ? (
-                  <button className="del" disabled={pending} onClick={() => remove(l)}>delete</button>
-                ) : l.fromChat ? (
-                  "from gc"
-                ) : (
-                  ""
-                )}
-              </span>
-            </li>
-          ))}
+          {receipts.map((e) =>
+            e.kind === "log" ? (
+              <li key={e.log.id}>
+                <span className="when">
+                  {lower(dateFmt.format(e.ts))} <span className="muted">{timeFmt.format(e.ts)}</span>
+                </span>
+                <span className="what">
+                  <span className="dot" style={{ background: colorOf(e.log.name) }} />
+                  <strong>{lower(e.log.name)}</strong> took {e.log.bins} {e.log.bins === 1 ? "bin" : "bins"}
+                </span>
+                <span className="tag">
+                  {e.log.name === who ? (
+                    <button className="del" disabled={pending} onClick={() => remove(e.log)}>delete</button>
+                  ) : e.log.fromChat ? (
+                    "from gc"
+                  ) : (
+                    ""
+                  )}
+                </span>
+              </li>
+            ) : (
+              <li key={e.ping.id} className="ping-row">
+                <span className="when">
+                  {lower(dateFmt.format(e.ts))} <span className="muted">{timeFmt.format(e.ts)}</span>
+                </span>
+                <span className="what">
+                  <span className="dot" style={{ background: colorOf(e.ping.from) }} />
+                  <strong>{lower(e.ping.from)}</strong> pinged <strong>{lower(e.ping.to)}</strong>
+                </span>
+                <span className="tag">+10 psi</span>
+              </li>
+            ),
+          )}
         </ul>
-        {logs.length > 8 && (
+        {entries.length > 8 && (
           <button className="link more" onClick={() => setShowAll((v) => !v)}>
-            {showAll ? "show less" : `show all ${logs.length}`}
+            {showAll ? "show less" : `show all ${entries.length}`}
           </button>
         )}
       </section>
